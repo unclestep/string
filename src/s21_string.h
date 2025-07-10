@@ -1,3 +1,12 @@
+#include <ctype.h>
+#include <math.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <wchar.h>
+#include <wctype.h>
+
 #ifndef SSCANF_H
 #define SSCANF_H
 
