@@ -1,9 +1,7 @@
 #ifndef S21_STD_H
 #define S21_STD_H
 
-#define s21_size_t unsigned int
-#define s21_byte_t unsigned char
-#define S21_NULL (void *)0
+#include "s21_defines.h"
 
 void *s21_memchr(const void *str, int c, s21_size_t n);
 int s21_memcmp(const void *str1, const void *str2, s21_size_t n);

@@ -44,7 +44,7 @@ gcov_report: $(TEST)
 	genhtml $(BUILD_DIR)/$(TEST)/coverage.info --output-directory $(BUILD_DIR)/coverage
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(TARGET).a
 
 check-clang:
 	find . -name *.c -o -name *.h | xargs clang-format -n -style=Google
