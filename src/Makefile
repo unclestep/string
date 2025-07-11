@@ -26,7 +26,7 @@ TEST_SRCS = $(wildcard $(TEST)/*/*.c) \
 	    $(wildcard $(TEST)/*.c)
 TEST_OBJS = $(patsubst %.c, $(BUILD_DIR)/%.o, $(TEST_SRCS))
 
-all: $(TARGET_LIB)
+all: clean $(TARGET_LIB)
 
 $(TARGET_LIB): $(OBJS)
 	ar rcs $@ $^
@@ -35,11 +35,11 @@ $(BUILD_DIR)/%.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-test: $(TEST_OBJS)
+test: clean $(TARGET_LIB) $(TEST_OBJS)
 	gcc $(CFLAGS) --coverage -o $(BUILD_DIR)/$(TEST)/$(TEST).out $(SRCS) $(TEST_OBJS) $(LIBS)
 	./$(BUILD_DIR)/$(TEST)/$(TEST).out
 
-gcov_report: $(TEST)
+gcov_report: test
 	lcov --capture --directory . --output-file $(BUILD_DIR)/$(TEST)/coverage.info
 	genhtml $(BUILD_DIR)/$(TEST)/coverage.info --output-directory $(BUILD_DIR)/coverage
 

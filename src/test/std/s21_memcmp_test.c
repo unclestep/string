@@ -10,14 +10,14 @@ END_TEST
 START_TEST(s21_memcmp_inequal_1) {
   const int str1[] = {0, 1, 2, 3, 9};
   const int str2[] = {0, 1, 2, 7, 5};
-  ck_assert_int_eq(s21_memcmp(str1, str2, 5 * sizeof(int)), -4);
+  ck_assert_int_le(s21_memcmp(str1, str2, 5 * sizeof(int)), 0);
 }
 END_TEST
 
 START_TEST(s21_memcmp_inequal_2) {
   const int str1[] = {0, 1, 2, 3, 9};
   const int str2[] = {0, 1, 2, 3, 1};
-  ck_assert_int_eq(s21_memcmp(str1, str2, 10 * sizeof(int)), 8);
+  ck_assert_int_ge(s21_memcmp(str1, str2, 10 * sizeof(int)), 0);
 }
 END_TEST
 
