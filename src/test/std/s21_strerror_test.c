@@ -3,7 +3,6 @@
 
 START_TEST(s21_strerror_all) {
   for (int errnum = -200; errnum <= 200; ++errnum) {
-    // printf("[%d] = \"%s\",\n", errnum, strerror(errnum));
     ck_assert_str_eq(strerror(errnum), s21_strerror(errnum));
   }
 }
