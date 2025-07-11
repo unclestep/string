@@ -3,6 +3,7 @@
 
 #include <check.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "../s21_string.h"
 #include "include/s21_bonus_test.h"

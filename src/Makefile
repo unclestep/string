@@ -2,7 +2,7 @@ CFLAGS = -Wall -Werror -Wextra -std=c11 -g
 CC = gcc
 LIBS = -lcheck
 ifeq ($(shell uname), Linux)
-	LIBS += -lm -lpthread -lsubunit -lr
+	LIBS += -lm -lpthread -lsubunit -lrt
 endif 
 
 BUILD_DIR = build

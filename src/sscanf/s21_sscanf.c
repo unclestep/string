@@ -1,4 +1,4 @@
-#include "s21_string.h"
+#include "../s21_string.h"
 #define s21_setargi(TYPE, FUNCTION, BASE)                \
   {                                                      \
     TYPE arg;                                            \
