@@ -2,7 +2,7 @@
 #include "../s21_string.h"
 
 char *s21_strerror(int errnum) {
-  static char *error_matrix[] = ERRORS;
+  static const char *error_matrix[] = ERRORS;
   static char error_message[128];
 
   if (errnum < 0 || errnum > ERROR_COUNT) {
