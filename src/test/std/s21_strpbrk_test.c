@@ -31,6 +31,14 @@ START_TEST(s21_strpbrk_null) {
 }
 END_TEST
 
+START_TEST(s21_strpbrk_empty) {
+  const char *str1 = "\0";
+  const char *str2 = "abc";
+  ck_assert_ptr_eq(s21_strpbrk(str1, str2), s21_NULL);
+  ck_assert_ptr_eq(s21_strpbrk(str1, str2), strpbrk(str1, str2));
+}
+END_TEST
+
 Suite *suite_s21_strpbrk_test(void) {
   Suite *s = suite_create("s21_strpbrk_test");
   TCase *tc = tcase_create("s21_strpbrk_test");
@@ -39,6 +47,7 @@ Suite *suite_s21_strpbrk_test(void) {
   tcase_add_test(tc, s21_strpbrk_good_find_2);
   tcase_add_test(tc, s21_strpbrk_null_term);
   tcase_add_test(tc, s21_strpbrk_null);
+  tcase_add_test(tc, s21_strpbrk_empty);
 
   return s;
 }

@@ -21,6 +21,13 @@ START_TEST(s21_strcspn_forbid_whole) {
 }
 END_TEST
 
+START_TEST(s21_strcspn_empty) {
+  const char *str1 = "\0";
+  const char *str2 = "abcdefghiwxyz";
+  ck_assert_int_eq(s21_strcspn(str1, str2), 0);
+}
+END_TEST
+
 Suite *suite_s21_strcspn_test(void) {
   Suite *s = suite_create("s21_strcspn_test");
   TCase *tc = tcase_create("s21_strcspn_test");
@@ -28,6 +35,7 @@ Suite *suite_s21_strcspn_test(void) {
   tcase_add_test(tc, s21_strcspn_forbid_end);
   tcase_add_test(tc, s21_strcspn_forbid_in_4_spots);
   tcase_add_test(tc, s21_strcspn_forbid_whole);
+  tcase_add_test(tc, s21_strcspn_empty);
 
   return s;
 }
