@@ -1,0 +1,17 @@
+#include "../s21_string.h"
+
+char *s21_strstr(const char *haystack, const char *needle) {
+  const char *hl = haystack;
+  const char *hr = haystack;
+  bool match = false;
+
+  for (; !match && *hl;) {
+    match = true;
+    for (const char *ncur = needle; match && *hr && *ncur; ++hr, ++ncur) {
+      match = *hr == *ncur;
+    }
+    hl = !match || !*hr ? hr : hl;
+  }
+
+  return *hl ? (char *)hl : s21_NULL;
+}
