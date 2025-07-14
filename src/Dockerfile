@@ -4,7 +4,11 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     git \
     check \
+    locales \
+    && locale-gen en_US.UTF-8 \
     && apt-get clean
+
+ENV LANGUAGE=en_US.UTF-8
 
 WORKDIR /project
 COPY . .
