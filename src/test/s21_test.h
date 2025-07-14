@@ -2,7 +2,7 @@
 #define S21_STRING_TEST_H
 
 #include <check.h>
-#include <stdio.h>
+#include <locale.h>
 #include <string.h>
 
 #include "../s21_string.h"
