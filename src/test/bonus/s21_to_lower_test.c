@@ -6,7 +6,11 @@ START_TEST(s21_to_lower_nullptr) {
 END_TEST
 
 START_TEST(s21_to_lower_only_lower_alphabet) {
-  const char *str = "abcdefghijklmn";
+  char str[27] = "\0";
+  for (s21_size_t i = 0; i != 26; ++i) {
+    str[i] = 'a' + i;
+  }
+
   char *r = s21_to_lower(str);
   ck_assert_int_eq(s21_strcmp(r, str), 0);
   free(r);
@@ -14,19 +18,24 @@ START_TEST(s21_to_lower_only_lower_alphabet) {
 END_TEST
 
 START_TEST(s21_to_lower_only_upper_alphabet) {
-  const char *str = "ABCDEFGHIKLMN";
+  char str[27] = "\0";
+  for (s21_size_t i = 0; i != 26; ++i) {
+    str[i] = 'A' + i;
+  }
+
   char *r = s21_to_lower(str);
-  for (char *rcur = r; *str; ++str, ++rcur) {
-    ck_assert_int_eq(*rcur, *str + CASE_SHIFT);
+  char *rcur = r;
+  for (s21_size_t i = 0; i != 26; ++i, ++rcur) {
+    ck_assert_int_eq(*rcur, str[i] + CASE_SHIFT);
   }
   free(r);
 }
 END_TEST
 
 START_TEST(s21_to_lower_mixed) {
-  const char *str = "aB123cDEFghi";
+  const char *str = "aB123!cDEF@#ghi";
   char *r = s21_to_lower(str);
-  ck_assert_int_eq(s21_strcmp(r, "ab123cdefghi"), 0);
+  ck_assert_int_eq(s21_strcmp(r, "ab123!cdef@#ghi"), 0);
   free(r);
 }
 END_TEST
