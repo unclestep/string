@@ -1,0 +1,7 @@
+breakpoint set --name s21_sprintf_spec_c_wide_char_2
+breakpoint set --name get_modifiers
+breakpoint set --name handle_conversion
+breakpoint set --name spec_c
+breakpoint set --name wcrtostr
+breakpoint set --name addwid
+run

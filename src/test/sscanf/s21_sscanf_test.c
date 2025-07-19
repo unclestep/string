@@ -1,14 +1,6 @@
 #include "../s21_test.h"
 
-#if defined(__APPLE__)
 #define LOCALE "en_US.UTF-8"
-#define MAX_ITER 102
-#endif
-
-#if defined(__linux__)
-#define LOCALE "en_US.UTF-8"
-#define MAX_ITER 131
-#endif
 
 START_TEST(s21_sscanf_uint) {
   char in[] = "1 1000000000 1 -1";

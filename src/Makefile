@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Werror -Wextra -std=c11 -g
+CFLAGS = -Wall -Werror -Wextra -std=c11 -g -O0
 CC = gcc
 LIBS = -lcheck
 ifeq ($(shell uname), Linux)
