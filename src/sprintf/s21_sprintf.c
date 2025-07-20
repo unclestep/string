@@ -9,17 +9,12 @@ int s21_sprintf(char *str, const char *format, ...) {
   int written = 0;
   bool is_error = false;
 
-  for (; !is_error && *fcur; ++fcur, ++scur, ++written) {
+  for (; !is_error && *fcur; ++fcur) {
     if (*fcur == '%') {
-      /* After this func scur, fcur will point to the last spec element (e.g d,
-       * s)
-       */
-      /* And wrritten won't have accounted yet last elem */
-      /* Written will have actual value in the end of iteration */
-      /* Pass adderesses of pointers to update them inside */
       is_error = conversion_specification(&scur, &fcur, &written, &args);
     } else {
-      *scur = *fcur;
+      *scur++ = *fcur;
+      ++written;
     }
   }
 
@@ -179,68 +174,83 @@ bool handle_conversion(char **scur, int *written, ConvMods_t *mods,
   return is_error;
 }
 
-bool wcrtostr(char *array, ConvMods_t *mods, wchar_t *wc, s21_size_t wc_sz) {
+bool wcrtostr(SizeChar_t *mb, ConvMods_t *mods, wchar_t *wc, s21_size_t wc_sz) {
   bool is_error = false;
+  bool prec_max = false;
+  bool nterm = false;
 
   mbstate_t state;
   s21_memset(&state, 0, sizeof(state));
 
-  char *mb = malloc(MB_CUR_MAX * wc_sz);
-  char *mbcur = mb;
+  char *mbcur = mb->array;
+  s21_size_t i = 0;
+  for (; !is_error && !prec_max && !nterm && i < wc_sz; ++i) {
+    char mbbuf[5] = "\0";
+    int wrch = wcrtomb(mbbuf, wc[i], &state);
 
-  for (s21_size_t i = 0; !is_error && i < wc_sz; ++i) {
-    int wrch = wcrtomb(mbcur, wc[i], &state);
     if (wrch == -1) {
       is_error = 1;
+    } else if ((int)mb->size + wrch > mods->prec && mods->prec >= 0) {
+      prec_max = true;
+      *mbcur = '\0';
+      mbcur += 1;
     } else {
-      mbcur += wrch;
+      s21_strcpy(mbcur, mbbuf);
+      if (!*mbcur && mods->spec == 's') {
+        nterm = true;
+      } else {
+        mb->size += wrch;
+        mbcur += wrch;
+      }
     }
   }
 
-  s21_size_t mb_sz = mbcur - mb;
-  printf("Bytes of wide char: ");
-  for (int i = 0; i != mods->prec && i < (int)mb_sz; ++i) {
-    printf("%#x ", (unsigned char)mb[i]);
-    array[i] = mb[i];
+  if (i == wc_sz && !nterm) {
+    --mb->size;
   }
-  printf("\n");
-
-  free(mb);
 
   return is_error;
 }
 
-void addwid(char **array, s21_size_t arr_sz, ConvMods_t *mods) {
+bool addwid(SizeChar_t *array, ConvMods_t *mods) {
   char widfil = mods->zero && s21_strchr("dioxXufeEgG", mods->spec) ? '0' : ' ';
-  int arrlen = s21_strlen(*array);
-  int widdif = mods->wid - arrlen > 0 ? mods->wid - arrlen : 0;
-  int needed_capacity = arrlen + widdif + 1;
+  int widdif = mods->wid - array->size > 0 ? mods->wid - array->size : 0;
+  int needed_capacity = array->size + widdif + 1;
+  bool is_error = false;
 
   if (widdif > 0) {
-    if (needed_capacity > (int)arr_sz) {
+    if (needed_capacity > (int)array->size) {
       char *buf = malloc(needed_capacity);
-      if (!mods->minus) {
+      is_error = !buf;
+      if (buf && !mods->minus) {
         s21_memset(buf, widfil, widdif);
-        s21_memcpy(buf + widdif, *array, arrlen + 1);
-      } else {
-        s21_memcpy(buf, *array, arrlen);
-        s21_memset(buf + arrlen, widfil, widdif);
-        buf[arrlen + widdif] = '\0';
+        s21_memcpy(buf + widdif, array->array, array->size + 1);
+      } else if (buf && mods->minus) {
+        s21_memcpy(buf, array->array, array->size);
+        s21_memset(buf + array->size, widfil, widdif);
+        buf[array->size + widdif] = '\0';
       }
-      free(*array);
-      *array = buf;
+
+      if (buf) {
+        free(array->array);
+        array->array = buf;
+      }
     } else {
       if (!mods->minus) {
-        for (int i = arrlen; i >= 0; --i) {
-          (*array)[i + widdif] = (*array)[i];
+        for (int i = array->size; i >= 0; --i) {
+          array->array[i + widdif] = array->array[i];
         }
-        s21_memset(*array, widfil, widdif);
+        s21_memset(array->array, widfil, widdif);
       } else {
-        s21_memset(*array + arrlen, widfil, widdif);
-        (*array)[arrlen + widdif] = '\0';
+        s21_memset(array->array + array->size, widfil, widdif);
+        array->array[array->size + widdif] = '\0';
       }
     }
+
+    array->size += widdif;
   }
+
+  return is_error;
 }
 
 bool spec_c(char **scur, int *written, ConvMods_t *mods, va_list *args) {
@@ -248,36 +258,41 @@ bool spec_c(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   bool is_error = false;
   mods->prec = -1;
 
-  s21_size_t buf_sz = 128;
-  char *buf = malloc(buf_sz);
+  s21_size_t buf_sz = 64;
+  SizeChar_t buf = {0};
+  buf.array = malloc(buf_sz);
+  is_error = !buf.array;
 
-  if (mods->len == 'l') {
-    wchar_t wc[2] = (wchar_t[]){arg, 0};
-    is_error = wcrtostr(buf, mods, wc, 2);
-  } else {
-    buf[0] = (unsigned char)arg;
-    buf[1] = '\0';
+  if (!is_error) {
+    if (mods->len == 'l') {
+      wchar_t wc[2] = (wchar_t[]){arg, 0};
+      is_error = wcrtostr(&buf, mods, wc, 2);
+    } else {
+      buf.array[0] = (unsigned char)arg;
+      buf.array[1] = '\0';
+      buf.size = 1;
+    }
   }
 
-  addwid(&buf, buf_sz, mods);
+  is_error = addwid(&buf, mods);
 
-  char *bufcur = buf;
-  for (; *bufcur; ++bufcur, ++*scur, ++*written) {
-    **scur = *bufcur;
-  }
-  if (bufcur > buf) {
-    --*scur;
-    --*written;
+  if (!is_error) {
+    for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
+      **scur = buf.array[i];
+    }
+    *written += buf.size;
   }
 
-  free(buf);
+  if (buf.array) {
+    free(buf.array);
+  }
 
   return is_error;
 }
 
 bool spec_s(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   bool is_error = false;
-  char *buf = s21_NULL;
+  SizeChar_t buf = {0};
   s21_size_t buf_sz = 0;
 
   if (mods->len == 'l') {
@@ -288,7 +303,7 @@ bool spec_s(char **scur, int *written, ConvMods_t *mods, va_list *args) {
     }
     buf_sz = wcur - wca + 1; /* Including null-terminator */
 
-    is_error = wcrtostr(buf, mods, wca, buf_sz);
+    is_error = wcrtostr(&buf, mods, wca, buf_sz);
   } else {
     char *ca = va_arg(*args, char *);
     char *cur = ca;

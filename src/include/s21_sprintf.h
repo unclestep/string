@@ -22,6 +22,11 @@ typedef struct ConvMods_t {
   int spec;
 } ConvMods_t;
 
+typedef struct SizeChar_t {
+  char *array;
+  s21_size_t size;
+} SizeChar_t;
+
 int s21_sprintf(char *str, const char *format, ...);
 bool conversion_specification(char **scur, const char **fcur, int *written,
                               va_list *args);
@@ -29,8 +34,9 @@ bool get_modifiers(const char **fcur, ConvMods_t *mods, va_list *args);
 void adjust_modifiers(ConvMods_t *mods);
 bool handle_conversion(char **scur, int *written, ConvMods_t *mods,
                        va_list *args);
-bool wcrtostr(char *array, ConvMods_t *mods, wchar_t *wc, s21_size_t wc_sz);
-void addwid(char **array, s21_size_t arr_sz, ConvMods_t *mods);
+bool wcrtostr(SizeChar_t *array, ConvMods_t *mods, wchar_t *wc,
+              s21_size_t wc_sz);
+bool addwid(SizeChar_t *array, ConvMods_t *mods);
 
 bool spec_c(char **scur, int *written, ConvMods_t *mods, va_list *args);
 bool spec_s(char **scur, int *written, ConvMods_t *mods, va_list *args);
