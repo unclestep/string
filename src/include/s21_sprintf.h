@@ -1,6 +1,7 @@
 #ifndef S21_SPRINTF_H
 #define S21_SPRINTF_H
 
+#include <limits.h>
 #include <locale.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -25,6 +26,7 @@ typedef struct ConvMods_t {
 typedef struct SizeChar_t {
   char *array;
   s21_size_t size;
+  s21_size_t capacity;
 } SizeChar_t;
 
 int s21_sprintf(char *str, const char *format, ...);
@@ -40,7 +42,7 @@ bool addwid(SizeChar_t *array, ConvMods_t *mods);
 
 bool spec_c(char **scur, int *written, ConvMods_t *mods, va_list *args);
 bool spec_s(char **scur, int *written, ConvMods_t *mods, va_list *args);
-// void spec_di(char **scur, int *written, ConvMods_t *mods, va_list *args);
+bool spec_di(char **scur, int *written, ConvMods_t *mods, va_list *args);
 // void spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args);
 // void spec_xX(char **scur, int *written, ConvMods_t *mods, va_list *args);
 // void spec_u(char **scur, int *written, ConvMods_t *mods, va_list *args);
