@@ -137,7 +137,7 @@ bool handle_conversion(char **scur, int *written, ConvMods_t *mods,
       spec_di(scur, written, mods, args);
       break;
     case 'o':
-      // spec_o(scur, written, mods, args);
+      spec_o(scur, written, mods, args);
       break;
     case 'x':
     case 'X':
@@ -468,53 +468,54 @@ bool spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args) {
 
   unsigned long arg = 0;
 
-  if (mods->len == 'h' || mods->len == -1) {
-    arg = (unsigned long)va_arg(*args, unsigned int);
+  if (mods->len == 'h') {
+    arg = (unsigned long)((unsigned short)va_arg(*args, unsigned));
   } else if (mods->len == 'l') {
     arg = (unsigned long)va_arg(*args, unsigned long);
+  } else if (mods->len == -1) {
+    arg = (unsigned long)va_arg(*args, unsigned);
   } else {
     is_error = true;
   }
 
   int prec = mods->prec < 0 ? 1 : mods->prec;
-  int arglen = intlen(arg);
-  int precdif = prec - arglen > 0 ? prec - arglen : 0;
-  int sign = arg < 0 || mods->plus || mods->space ? 1 : 0;
-  int widdif = mods->wid - (arglen + precdif + sign) > 0
-                   ? mods->wid - (arglen + precdif)
-                   : 0;
-  int needed_capacity = arglen + precdif + sign + widdif + 1;
+  int arglen = 0;
 
+  char *tmp = malloc(32);
+  char *tcur = tmp;
+  is_error = !tmp;
+
+  if (!is_error) {
+    if (!arg && mods->prec != 0) {
+      *tcur++ = '0';
+      ++arglen;
+    }
+
+    for (; arg; arg /= 8, ++tcur, ++arglen) {
+      *tcur = arg % 8 + '0';
+    }
+    *tcur = '\0';
+  }
+
+  int precdif = prec - arglen > 0 ? prec - arglen : mods->hash;
+  int widdif =
+      mods->wid - (arglen + precdif) > 0 ? mods->wid - (arglen + precdif) : 0;
+  int needed_capacity = arglen + precdif + widdif + 1;
   buf.capacity = needed_capacity;
-  buf.size = precdif + sign + arglen;
+  buf.size = precdif + arglen;
   buf.array = malloc(needed_capacity);
+  char *bufcur = buf.array;
   is_error = !buf.array;
 
   if (!is_error) {
-    char *bufcur = buf.array;
-
-    if (arg < 0) {
-      *bufcur++ = '-';
-    } else if (mods->space) {
-      *bufcur++ = ' ';
-    } else if (mods->plus) {
-      *bufcur++ = '+';
-    }
-
     for (int i = 0; i < precdif; ++i, ++bufcur) {
       *bufcur = '0';
     }
 
-    if (!arg) {
-      *bufcur = '0';
+    for (tcur = !*tcur ? tcur - 1 : tcur; tcur >= tmp; --tcur, ++bufcur) {
+      *bufcur = *tcur;
     }
-
-    for (char *reverse = bufcur + arglen - 1; arg; arg /= 10, --reverse) {
-      *reverse = arg % 10 + '0';
-    }
-    bufcur += arglen;
     *bufcur = '\0';
-
     is_error = addwid(&buf, mods);
   }
 
@@ -527,6 +528,10 @@ bool spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args) {
 
   if (buf.array) {
     free(buf.array);
+  }
+
+  if (tmp) {
+    free(tmp);
   }
 
   return is_error;

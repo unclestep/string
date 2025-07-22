@@ -43,7 +43,7 @@ bool addwid(SizeChar_t *array, ConvMods_t *mods);
 bool spec_c(char **scur, int *written, ConvMods_t *mods, va_list *args);
 bool spec_s(char **scur, int *written, ConvMods_t *mods, va_list *args);
 bool spec_di(char **scur, int *written, ConvMods_t *mods, va_list *args);
-// void spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args);
+bool spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args);
 // void spec_xX(char **scur, int *written, ConvMods_t *mods, va_list *args);
 // void spec_u(char **scur, int *written, ConvMods_t *mods, va_list *args);
 // void spec_f(char **scur, int *written, ConvMods_t *mods, va_list *args);
