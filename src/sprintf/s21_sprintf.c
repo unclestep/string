@@ -144,7 +144,7 @@ bool handle_conversion(char **scur, int *written, ConvMods_t *mods,
       spec_xX(scur, written, mods, args);
       break;
     case 'u':
-      // spec_u(scur, written, mods, args);
+      spec_u(scur, written, mods, args);
       break;
     case 'f':
       // spec_f(scur, written, mods, args);
@@ -616,6 +616,73 @@ bool spec_xX(char **scur, int *written, ConvMods_t *mods, va_list *args) {
 
   if (tmp) {
     free(tmp);
+  }
+
+  return is_error;
+}
+
+bool spec_u(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+  bool is_error = false;
+  SizeChar_t buf = {0};
+
+  unsigned long arg = 0;
+
+  if (mods->len == 'h') {
+    arg = (unsigned long)((unsigned short)va_arg(*args, unsigned));
+  } else if (mods->len == 'l') {
+    arg = (unsigned long)va_arg(*args, unsigned long);
+  } else if (mods->len == -1) {
+    arg = (unsigned long)va_arg(*args, unsigned);
+  } else {
+    is_error = true;
+  }
+
+  int prec = mods->prec < 0 ? 1 : mods->prec;
+  int arglen = !arg && !mods->prec ? 0 : (int)log10(arg) + 1;
+  int precdif = prec - arglen > 0 ? prec - arglen : 0;
+  int widdif =
+      mods->wid - (arglen + precdif) > 0 ? mods->wid - (arglen + precdif) : 0;
+  int needed_capacity = arglen + precdif + widdif + 1;
+
+  buf.capacity = needed_capacity;
+  buf.size = precdif + arglen;
+  buf.array = malloc(needed_capacity);
+  char *bufcur = buf.array;
+  is_error = !buf.array;
+
+  if (!is_error) {
+    if (mods->prec < 0 && widdif && mods->zero) {
+      for (int i = 0; i < widdif; ++i, ++bufcur) {
+        *bufcur = '0';
+      }
+      buf.size += widdif;
+    }
+
+    for (int i = 0; i < precdif; ++i, ++bufcur) {
+      *bufcur = '0';
+    }
+
+    if (!arg && mods->prec != 0) {
+      *bufcur = '0';
+    }
+
+    for (char *reverse = bufcur + arglen - 1; arg; arg /= 10, --reverse) {
+      *reverse = arg % 10 + '0';
+    }
+    bufcur += arglen;
+    *bufcur = '\0';
+    is_error = addwid(&buf, mods);
+  }
+
+  if (!is_error) {
+    for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
+      **scur = buf.array[i];
+    }
+    *written += buf.size;
+  }
+
+  if (buf.array) {
+    free(buf.array);
   }
 
   return is_error;
