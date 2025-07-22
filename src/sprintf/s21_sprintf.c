@@ -141,7 +141,7 @@ bool handle_conversion(char **scur, int *written, ConvMods_t *mods,
       break;
     case 'x':
     case 'X':
-      // spec_xX(scur, written, mods, args);
+      spec_xX(scur, written, mods, args);
       break;
     case 'u':
       // spec_u(scur, written, mods, args);
@@ -478,7 +478,6 @@ bool spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args) {
     is_error = true;
   }
 
-  int prec = mods->prec < 0 ? 1 : mods->prec;
   int arglen = 0;
 
   char *tmp = malloc(32);
@@ -488,7 +487,6 @@ bool spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   if (!is_error) {
     if (!arg && mods->prec != 0) {
       *tcur++ = '0';
-      ++arglen;
     }
 
     for (; arg; arg /= 8, ++tcur, ++arglen) {
@@ -497,6 +495,7 @@ bool spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args) {
     *tcur = '\0';
   }
 
+  int prec = mods->prec < 0 ? 1 : mods->prec;
   int precdif = prec - arglen > 0 ? prec - arglen : mods->hash;
   int widdif =
       mods->wid - (arglen + precdif) > 0 ? mods->wid - (arglen + precdif) : 0;
@@ -508,6 +507,91 @@ bool spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   is_error = !buf.array;
 
   if (!is_error) {
+    for (int i = 0; i < precdif; ++i, ++bufcur) {
+      *bufcur = '0';
+    }
+
+    for (tcur = !*tcur ? tcur - 1 : tcur; tcur >= tmp; --tcur, ++bufcur) {
+      *bufcur = *tcur;
+    }
+    *bufcur = '\0';
+    is_error = addwid(&buf, mods);
+  }
+
+  if (!is_error) {
+    for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
+      **scur = buf.array[i];
+    }
+    *written += buf.size;
+  }
+
+  if (buf.array) {
+    free(buf.array);
+  }
+
+  if (tmp) {
+    free(tmp);
+  }
+
+  return is_error;
+}
+
+bool spec_xX(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+  bool is_error = false;
+  SizeChar_t buf = {0};
+
+  unsigned long arg = 0;
+
+  if (mods->len == 'h') {
+    arg = (unsigned long)((unsigned short)va_arg(*args, unsigned));
+  } else if (mods->len == 'l') {
+    arg = (unsigned long)va_arg(*args, unsigned long);
+  } else if (mods->len == -1) {
+    arg = (unsigned long)va_arg(*args, unsigned);
+  } else {
+    is_error = true;
+  }
+
+  int arglen = 0;
+
+  char *tmp = malloc(32);
+  char *tcur = tmp;
+  is_error = !tmp;
+
+  if (!is_error) {
+    char *alphabet =
+        mods->spec == 'x' ? "0123456789abcdef" : "0123456789ABCDEF";
+
+    if (!arg && mods->prec != 0) {
+      *tcur++ = '0';
+    }
+
+    unsigned long decarg = arg;
+    for (; decarg; decarg /= 16, ++tcur, ++arglen) {
+      *tcur = alphabet[decarg % 16];
+    }
+    *tcur = '\0';
+  }
+
+  int prefix = mods->hash && arg ? 2 : 0;
+  int prec = mods->prec < 0 ? 1 : mods->prec;
+  int precdif = prec - arglen > 0 ? prec - arglen : 0;
+  int widdif = mods->wid - (arglen + precdif + prefix) > 0
+                   ? mods->wid - (arglen + precdif + prefix)
+                   : 0;
+  int needed_capacity = arglen + precdif + widdif + prefix + 1;
+  buf.capacity = needed_capacity;
+  buf.size = precdif + arglen + prefix;
+  buf.array = malloc(needed_capacity);
+  char *bufcur = buf.array;
+  is_error = !buf.array;
+
+  if (!is_error) {
+    if (mods->hash && arg) {
+      *bufcur++ = '0';
+      *bufcur++ = mods->spec == 'x' ? 'x' : 'X';
+    }
+
     for (int i = 0; i < precdif; ++i, ++bufcur) {
       *bufcur = '0';
     }
