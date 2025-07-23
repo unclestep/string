@@ -1566,7 +1566,7 @@ START_TEST(s21_sprintf_spec_xX_width_flags_unwork) {
   ck_assert_int_eq(read1, read2);
 }
 
-START_TEST(s21_sprintf_spec_xX_prec) {
+START_TEST(s21_sprintf_spec_xX_prec_1) {
   char str1[128];
   char str2[128];
 
@@ -1574,6 +1574,18 @@ START_TEST(s21_sprintf_spec_xX_prec) {
   int read2 = sprintf(str2, "%.5x", 21);
 
   ck_assert_int_eq(s21_strcmp(str1, "00015"), 0);
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+}
+
+START_TEST(s21_sprintf_spec_xX_prec_2) {
+  char str1[128];
+  char str2[128];
+
+  int read1 = s21_sprintf(str1, "%8.5x", 0);
+  int read2 = sprintf(str2, "%8.5x", 0);
+
+  ck_assert_int_eq(s21_strcmp(str1, "   00000"), 0);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
 }
@@ -2023,6 +2035,18 @@ START_TEST(s21_sprintf_spec_u_prec_zero_6) {
   ck_assert_int_eq(read1, read2);
 }
 
+START_TEST(s21_sprintf_spec_u_prec_zero_7) {
+  char str1[128];
+  char str2[128];
+
+  int read1 = s21_sprintf(str1, "abc%-8.5udef", 0);
+  int read2 = sprintf(str2, "abc%-8.5udef", 0);
+
+  ck_assert_int_eq(s21_strcmp(str1, "abc00000   def"), 0);
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+}
+
 START_TEST(s21_sprintf_spec_u_prec_width) {
   char str1[128];
   char str2[128];
@@ -2078,7 +2102,7 @@ START_TEST(s21_sprintf_spec_u_prec_width_flags_unwork_3) {
   int read1 = s21_sprintf(str1, "%+8.5u", 21);
   int read2 = sprintf(str2, "%8.5u", 21);
 
-  ck_assert_int_eq(s21_strcmp(str1, "  +00021"), 0);
+  ck_assert_int_eq(s21_strcmp(str1, "   00021"), 0);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
 }
@@ -2160,8 +2184,6 @@ START_TEST(s21_sprintf_spec_u_prec_llen) {
 
   int read1 = s21_sprintf(str1, "%lu", ULONG_MAX);
   int read2 = sprintf(str2, "%lu", ULONG_MAX);
-  printf("STR1 = %s\n", str1);
-  printf("STR2 = %s\n", str2);
 
   ck_assert_int_eq(s21_strcmp(str1, "18446744073709551615"), 0);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
@@ -2308,7 +2330,8 @@ Suite *suite_s21_sprintf_test(void) {
   tcase_add_test(tc_xX, s21_sprintf_spec_xX_width_flags_1);
   tcase_add_test(tc_xX, s21_sprintf_spec_xX_width_flags_2);
   tcase_add_test(tc_xX, s21_sprintf_spec_xX_width_flags_unwork);
-  tcase_add_test(tc_xX, s21_sprintf_spec_xX_prec);
+  tcase_add_test(tc_xX, s21_sprintf_spec_xX_prec_1);
+  tcase_add_test(tc_xX, s21_sprintf_spec_xX_prec_2);
   tcase_add_test(tc_xX, s21_sprintf_spec_xX_prec_zero_1);
   tcase_add_test(tc_xX, s21_sprintf_spec_xX_prec_zero_2);
   tcase_add_test(tc_xX, s21_sprintf_spec_xX_prec_zero_3);
@@ -2349,6 +2372,7 @@ Suite *suite_s21_sprintf_test(void) {
   tcase_add_test(tc_u, s21_sprintf_spec_u_prec_zero_4);
   tcase_add_test(tc_u, s21_sprintf_spec_u_prec_zero_5);
   tcase_add_test(tc_u, s21_sprintf_spec_u_prec_zero_6);
+  tcase_add_test(tc_u, s21_sprintf_spec_u_prec_zero_7);
   tcase_add_test(tc_u, s21_sprintf_spec_u_prec_width);
   tcase_add_test(tc_u, s21_sprintf_spec_u_prec_width_flags);
   tcase_add_test(tc_u, s21_sprintf_spec_u_prec_width_flags_unwork_1);

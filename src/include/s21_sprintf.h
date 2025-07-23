@@ -40,6 +40,8 @@ bool handle_conversion(char **scur, int *written, ConvMods_t *mods,
 bool wcrtostr(SizeChar_t *array, ConvMods_t *mods, wchar_t *wc,
               s21_size_t wc_sz);
 bool addwid(SizeChar_t *array, ConvMods_t *mods);
+int intlen(long long i);
+int uintlen(unsigned long i);
 
 bool spec_c(char **scur, int *written, ConvMods_t *mods, va_list *args);
 bool spec_s(char **scur, int *written, ConvMods_t *mods, va_list *args);

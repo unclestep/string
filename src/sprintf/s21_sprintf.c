@@ -290,6 +290,54 @@ int intlen(long long i) {
   return intlen;
 }
 
+int uintlen(unsigned long i) {
+  int intlen = 1;
+
+  if (i >= 10000000000000000000ULL) {
+    intlen = 20;
+  } else if (i >= 1000000000000000000) {
+    intlen = 19;
+  } else if (i >= 100000000000000000) {
+    intlen = 18;
+  } else if (i >= 10000000000000000) {
+    intlen = 17;
+  } else if (i >= 1000000000000000) {
+    intlen = 16;
+  } else if (i >= 100000000000000) {
+    intlen = 15;
+  } else if (i >= 10000000000000) {
+    intlen = 14;
+  } else if (i >= 1000000000000) {
+    intlen = 13;
+  } else if (i >= 100000000000) {
+    intlen = 12;
+  } else if (i >= 10000000000) {
+    intlen = 11;
+  } else if (i >= 1000000000) {
+    intlen = 10;
+  } else if (i >= 100000000) {
+    intlen = 9;
+  } else if (i >= 10000000) {
+    intlen = 8;
+  } else if (i >= 1000000) {
+    intlen = 7;
+  } else if (i >= 100000) {
+    intlen = 6;
+  } else if (i >= 10000) {
+    intlen = 5;
+  } else if (i >= 1000) {
+    intlen = 4;
+  } else if (i >= 100) {
+    intlen = 3;
+  } else if (i >= 10) {
+    intlen = 2;
+  } else if (i >= 0) {
+    intlen = 1;
+  }
+
+  return intlen;
+}
+
 bool spec_c(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   mods->prec = -1;
 
@@ -487,16 +535,19 @@ bool spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   if (!is_error) {
     if (!arg && mods->prec != 0) {
       *tcur++ = '0';
+      arglen = 1;
     }
 
-    for (; arg; arg /= 8, ++tcur, ++arglen) {
-      *tcur = arg % 8 + '0';
+    unsigned long decarg = arg;
+    for (; decarg; decarg /= 8, ++tcur, ++arglen) {
+      *tcur = decarg % 8 + '0';
     }
     *tcur = '\0';
   }
 
   int prec = mods->prec < 0 ? 1 : mods->prec;
-  int precdif = prec - arglen > 0 ? prec - arglen : mods->hash;
+  int precdif =
+      (prec - arglen > 0) || (!arg && mods->prec) ? prec - arglen : mods->hash;
   int widdif =
       mods->wid - (arglen + precdif) > 0 ? mods->wid - (arglen + precdif) : 0;
   int needed_capacity = arglen + precdif + widdif + 1;
@@ -564,6 +615,7 @@ bool spec_xX(char **scur, int *written, ConvMods_t *mods, va_list *args) {
 
     if (!arg && mods->prec != 0) {
       *tcur++ = '0';
+      arglen = 1;
     }
 
     unsigned long decarg = arg;
@@ -638,7 +690,7 @@ bool spec_u(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   }
 
   int prec = mods->prec < 0 ? 1 : mods->prec;
-  int arglen = !arg && !mods->prec ? 0 : (int)log10(arg) + 1;
+  int arglen = !arg && !mods->prec ? 0 : uintlen(arg);
   int precdif = prec - arglen > 0 ? prec - arglen : 0;
   int widdif =
       mods->wid - (arglen + precdif) > 0 ? mods->wid - (arglen + precdif) : 0;
