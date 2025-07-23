@@ -1,6 +1,3 @@
-#include <limits.h>
-#include <unistd.h>
-
 #include "../s21_test.h"
 
 #define LOCALE "en_US.UTF-8"
@@ -2190,6 +2187,106 @@ START_TEST(s21_sprintf_spec_u_prec_llen) {
   ck_assert_int_eq(read1, read2);
 }
 
+/* SPECIFIER P */
+
+START_TEST(s21_sprintf_spec_p_zero_ptr) {
+  char str1[128];
+  char str2[128];
+
+  int read1 = s21_sprintf(str1, "%p", s21_NULL);
+  int read2 = sprintf(str2, "%p", s21_NULL);
+
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+}
+
+START_TEST(s21_sprintf_spec_p_zero_ptr_width) {
+  char str1[128];
+  char str2[128];
+
+  int read1 = s21_sprintf(str1, "%25p", s21_NULL);
+  int read2 = sprintf(str2, "%25p", s21_NULL);
+
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+}
+
+START_TEST(s21_sprintf_spec_p_zero_ptr_width_minus) {
+  char str1[128];
+  char str2[128];
+
+  int read1 = s21_sprintf(str1, "%-25p", s21_NULL);
+  int read2 = sprintf(str2, "%-25p", s21_NULL);
+
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+}
+
+START_TEST(s21_sprintf_spec_p_some_ptr) {
+  char str1[128];
+  char str2[128];
+
+  int a = 123;
+  char b = '4';
+  short c = 5;
+  long d = 6;
+  long long e = 7;
+  float f = 123.45;
+  double g = 123.45;
+  long double h = 123.45;
+
+  int read1 =
+      s21_sprintf(str1, "%p%p%p%p%p%p%p%p", &a, &b, &c, &d, &e, &f, &g, &h);
+  int read2 = sprintf(str2, "%p%p%p%p%p%p%p%p", &a, &b, &c, &d, &e, &f, &g, &h);
+
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+}
+
+START_TEST(s21_sprintf_spec_p_some_ptr_width) {
+  char str1[512];
+  char str2[512];
+
+  int a = 123;
+  char b = '4';
+  short c = 5;
+  long d = 6;
+  long long e = 7;
+  float f = 123.45;
+  double g = 123.45;
+  long double h = 123.45;
+
+  int read1 = s21_sprintf(str1, "%25p%25p%25p%25p%25p%25p%25p%25p", &a, &b, &c,
+                          &d, &e, &f, &g, &h);
+  int read2 = sprintf(str2, "%25p%25p%25p%25p%25p%25p%25p%25p", &a, &b, &c, &d,
+                      &e, &f, &g, &h);
+
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+}
+
+START_TEST(s21_sprintf_spec_p_some_ptr_width_minus) {
+  char str1[512];
+  char str2[512];
+
+  int a = 123;
+  char b = '4';
+  short c = 5;
+  long d = 6;
+  long long e = 7;
+  float f = 123.45;
+  double g = 123.45;
+  long double h = 123.45;
+
+  int read1 = s21_sprintf(str1, "%-25p%-25p%-25p%-25p%-25p%-25p%-25p%-25p", &a,
+                          &b, &c, &d, &e, &f, &g, &h);
+  int read2 = sprintf(str2, "%-25p%-25p%-25p%-25p%-25p%-25p%-25p%-25p", &a, &b,
+                      &c, &d, &e, &f, &g, &h);
+
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+}
+
 Suite *suite_s21_sprintf_test(void) {
   Suite *s = suite_create("s21_sprintf_test");
 
@@ -2385,6 +2482,15 @@ Suite *suite_s21_sprintf_test(void) {
   tcase_add_test(tc_u, s21_sprintf_spec_u_prec_hlen_2);
   tcase_add_test(tc_u, s21_sprintf_spec_u_prec_hlen_3);
   tcase_add_test(tc_u, s21_sprintf_spec_u_prec_llen);
+
+  TCase *tc_p = tcase_create("s21_sprintf_test_p");
+  suite_add_tcase(s, tc_p);
+  tcase_add_test(tc_u, s21_sprintf_spec_p_zero_ptr);
+  tcase_add_test(tc_u, s21_sprintf_spec_p_zero_ptr_width);
+  tcase_add_test(tc_u, s21_sprintf_spec_p_zero_ptr_width_minus);
+  tcase_add_test(tc_u, s21_sprintf_spec_p_some_ptr);
+  tcase_add_test(tc_u, s21_sprintf_spec_p_some_ptr_width);
+  tcase_add_test(tc_u, s21_sprintf_spec_p_some_ptr_width_minus);
 
   return s;
 }

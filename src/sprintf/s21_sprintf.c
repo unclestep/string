@@ -161,7 +161,7 @@ bool handle_conversion(char **scur, int *written, ConvMods_t *mods,
       // spec_n(scur, written, mods, args);
       break;
     case 'p':
-      // spec_p(scur, written, mods, args);
+      spec_p(scur, written, mods, args);
       break;
   }
 
@@ -331,7 +331,7 @@ int uintlen(unsigned long i) {
     intlen = 3;
   } else if (i >= 10) {
     intlen = 2;
-  } else if (i >= 0) {
+  } else {
     intlen = 1;
   }
 
@@ -735,6 +735,80 @@ bool spec_u(char **scur, int *written, ConvMods_t *mods, va_list *args) {
 
   if (buf.array) {
     free(buf.array);
+  }
+
+  return is_error;
+}
+
+bool spec_p(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+  uintptr_t arg = (uintptr_t)va_arg(*args, void *);
+
+  bool is_error = false;
+  int arglen = 0;
+
+  char *tmp = malloc(32);
+  char *tcur = tmp;
+  is_error = !tmp;
+
+  if (!is_error) {
+    char *alphabet = "0123456789abcdef";
+
+    unsigned long decarg = arg;
+
+    if (!decarg) {
+#if defined(__APPLE__)
+      *tcur++ = '0';
+#endif
+
+#if defined(__linux__)
+      *tcur++ = ')';
+      *tcur++ = 'l';
+      *tcur++ = 'i';
+      *tcur++ = 'n';
+      *tcur++ = '(';
+      arglen += 2;
+#endif
+      arglen += 1;
+    }
+
+    for (; decarg; decarg /= 16, ++tcur, ++arglen) {
+      *tcur = alphabet[decarg % 16];
+    }
+    *tcur = '\0';
+    arglen += 2;
+
+    int widdif = mods->wid - arglen > 0 ? mods->wid - arglen : 0;
+    *written += arglen + widdif;
+
+    if (widdif && !mods->minus) {
+      for (int i = 0; i < widdif; ++i, ++*scur) {
+        **scur = ' ';
+      }
+    }
+
+    if (arg) {
+      *(*scur)++ = '0';
+      *(*scur)++ = 'x';
+    } else {
+#if defined(__APPLE__)
+      *(*scur)++ = '0';
+      *(*scur)++ = 'x';
+#endif
+    }
+
+    for (tcur = !*tcur ? tcur - 1 : tcur; tcur >= tmp; --tcur, ++*scur) {
+      **scur = *tcur;
+    }
+
+    if (widdif && mods->minus) {
+      for (int i = 0; i < widdif; ++i, ++*scur) {
+        **scur = ' ';
+      }
+    }
+  }
+
+  if (tmp) {
+    free(tmp);
   }
 
   return is_error;
