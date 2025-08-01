@@ -813,3 +813,126 @@ bool spec_p(char **scur, int *written, ConvMods_t *mods, va_list *args) {
 
   return is_error;
 }
+
+bool spec_f(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+  uint128_t bits = 0;
+  int whole_part_len = 0;
+  int sign = 0;
+  bool is_error = false;
+  bool is_inf_nan = false;
+
+  FloatDec128_t fltdec = {0};
+
+  if (mods->len == 'L') {
+    long double arg = va_arg(*args, long double);
+    s21_memcpy(&bits, &arg, sizeof(long double));
+    whole_part_len = fabsl(arg) ? ceill(log10l(fabsl(arg))) : 0;
+    fltdec = ieeetodec(bits, LONG_DOUBLE_MANTISSA_BITS,
+                       LONG_DOUBLE_EXPONENT_BITS, true);
+    sign = fltdec.sign || mods->space || mods->plus ? 1 : 0;
+    // dectostr();
+
+  } else {
+    double arg = va_arg(*args, double);
+    s21_memcpy(&bits, &arg, sizeof(double));
+    whole_part_len = fabs(arg) ? ceil(log10(fabs(arg))) : 0;
+    fltdec = ieeetodec(bits, DOUBLE_MANTISSA_BITS, DOUBLE_EXPONENT_BITS, false);
+    sign = fltdec.sign || mods->space || mods->plus ? 1 : 0;
+    // dectostr();
+  }
+
+  if (!is_error && !is_inf_nan) {
+    int prec = mods->prec < 0 ? 6 : mods->prec;
+    int dot = prec || (!prec && mods->hash) ? 1 : 0;
+    int arglen = whole_part_len + prec + dot + sign;
+    int wid = mods->wid < 0 ? 0 : mods->wid;
+    int widdif = wid - arglen < 0 ? 0 : wid - arglen;
+    int needed_capacity = arglen + widdif;
+
+    SizeChar_t buf = {0};
+    buf.size = arglen;
+    buf.capacity = needed_capacity;
+    buf.array = malloc(needed_capacity);
+    is_error = !buf.array;
+  }
+
+  return is_error || is_inf_nan;
+}
+#define LONG_DOUBLE_EXPONENT_BITS 15
+#define LONG_DOUBLE_MANTISSA_BITS 64
+
+FloatDec128_t ieeetodec(const uint128_t bits, const uint32_t mantissa_n_bits,
+                        const uint32_t exponent_n_bits,
+                        const bool explicit_leading_bit) {
+  const uint32_t bias = (1u << (exponent_n_bits - 1)) - 1;
+  const bool ieee_sign =
+      ((bits >> (mantissa_n_bits + exponent_n_bits)) & 1) == 1;
+  const uint128_t ieee_mantissa =
+      bits & (((uint128_t)1 << mantissa_n_bits) - 1);
+  const uint32_t ieee_exponent =
+      (uint32_t)((bits >> mantissa_n_bits) &
+                 (((uint128_t)1 << exponent_n_bits) - 1));
+
+  if (ieee_exponent == 0 && ieee_mantissa == 0) { /* Zero */
+    FloatDec128_t fltdec;
+    fltdec.mantissa = 0;
+    fltdec.exponent = 0;
+    fltdec.sign = ieee_sign;
+    return fltdec;
+  } else if (ieee_exponent == ((1U << exponent_n_bits) - 1U)) { /* NaN or Inf */
+    FloatDec128_t fltdec;
+    fltdec.mantissa =
+        explicit_leading_bit
+            ? ieee_mantissa & (((uint128_t)1 << (mantissa_n_bits - 1)) - 1)
+            : ieee_mantissa;
+    fltdec.exponent = 0x7FFFFFFF;
+    fltdec.sign = ieee_sign;
+    return fltdec;
+  }
+
+  int32_t e2;
+  uint128_t m2;
+
+  if (explicit_leading_bit) {
+    if (ieee_exponent == 0) { /* Subnormal */
+      e2 = 1 - bias - mantissa_n_bits + 1 - 2;
+    } else {
+      e2 = ieee_exponent - bias - mantissa_n_bits + 1 - 2;
+    }
+    m2 = ieee_mantissa;
+  } else {
+    if (ieee_exponent == 0) { /* Subnormal */
+      e2 = 1 - bias - mantissa_n_bits - 2;
+      m2 = ieee_mantissa;
+    } else {
+      e2 = ieee_exponent - bias - mantissa_n_bits - 2;
+      m2 = ((uint128_t)1 << mantissa_n_bits) | ieee_mantissa;
+    }
+  }
+
+  const bool even = (m2 & 1) == 0;
+  const bool accept_bounds = even;
+
+  /* Allowed interval */
+  const uint128_t mv = 4 * m2;
+  const uint32_t mm_shift =
+      (bin_mantissa !=
+       (explicit_leading_bit ? (uint128_t)1 << (mantissa_n_bits - 1) : 0)) ||
+      (bin_exponent == 0);
+}
+
+void ftoa(char *array, ConvMods_t *mods, va_list *args) {
+  FloatDec128_t fltdec;
+  uint128_t bits = 0;
+
+  if (mods->spec == 'L') {
+    long double arg = va_arg(*args, long double);
+    s21_memcpy(&bits, &arg, sizeof(long double));
+    fltdec = bintodec(bits, LONG_DOUBLE_MANTISSA_BITS,
+                      LONG_DOUBLE_EXPONENT_BITS, true);
+  } else {
+    double arg = va_arg(*args, double);
+    s21_memcpy(&bits, &arg, sizeof(double));
+    fltdec = bintodec(bits, DOUBLE_MANTISSA_BITS, DOUBLE_EXPONENT_BITS, false);
+  }
+}
