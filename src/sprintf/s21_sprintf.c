@@ -11,7 +11,7 @@ int s21_sprintf(char *str, const char *format, ...) {
 
   for (; !is_error && *fcur; ++fcur) {
     if (*fcur == '%') {
-      is_error = conversion_specification(&scur, &fcur, &written, &args);
+      is_error = datatostr(&scur, &fcur, &written, &args);
     } else {
       *scur++ = *fcur;
       ++written;
@@ -24,8 +24,7 @@ int s21_sprintf(char *str, const char *format, ...) {
   return is_error ? -1 : written;
 }
 
-bool conversion_specification(char **scur, const char **fcur, int *written,
-                              va_list *args) {
+bool datatostr(char **scur, const char **fcur, int *written, va_list *args) {
   bool is_error = false;
   ConvMods_t mods = {.minus = 0,
                      .plus = 0,
@@ -37,15 +36,15 @@ bool conversion_specification(char **scur, const char **fcur, int *written,
                      .len = -1,
                      .spec = -1};
 
-  is_error = get_modifiers(fcur, &mods, args);
+  is_error = get_convmods(fcur, &mods, args);
   if (!is_error) {
-    adjust_modifiers(&mods);
-    is_error = handle_conversion(scur, written, &mods, args);
+    adjust_convmods(&mods);
+    is_error = convert(scur, written, &mods, args);
   }
   return is_error;
 }
 
-bool get_modifiers(const char **fcur, ConvMods_t *mods, va_list *args) {
+bool get_convmods(const char **fcur, ConvMods_t *mods, va_list *args) {
   ++*fcur;
   bool is_error = false;
   char ch = '\0';
@@ -107,7 +106,7 @@ bool get_modifiers(const char **fcur, ConvMods_t *mods, va_list *args) {
   return is_error;
 }
 
-void adjust_modifiers(ConvMods_t *mods) {
+void adjust_convmods(ConvMods_t *mods) {
   if (mods->plus || s21_strchr("csoxXu", mods->spec)) {
     mods->space = false;
   }
@@ -118,8 +117,7 @@ void adjust_modifiers(ConvMods_t *mods) {
   }
 }
 
-bool handle_conversion(char **scur, int *written, ConvMods_t *mods,
-                       va_list *args) {
+bool convert(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   bool is_error = false;
 
   switch (mods->spec) {
@@ -134,208 +132,38 @@ bool handle_conversion(char **scur, int *written, ConvMods_t *mods,
       break;
     case 'd':
     case 'i':
-      spec_di(scur, written, mods, args);
+      is_error = spec_di(scur, written, mods, args);
       break;
     case 'o':
-      spec_o(scur, written, mods, args);
+      is_error = spec_o(scur, written, mods, args);
       break;
     case 'x':
     case 'X':
-      spec_xX(scur, written, mods, args);
+      is_error = spec_xX(scur, written, mods, args);
       break;
     case 'u':
-      spec_u(scur, written, mods, args);
+      is_error = spec_u(scur, written, mods, args);
       break;
     case 'f':
-      // spec_f(scur, written, mods, args);
+      // is_error = spec_f(scur, written, mods, args);
       break;
     case 'e':
     case 'E':
-      // spec_eE(scur, written, mods, args);
+      // is_error = spec_eE(scur, written, mods, args);
       break;
     case 'g':
     case 'G':
-      // spec_gG(scur, written, mods, args);
+      // is_error = spec_gG(scur, written, mods, args);
       break;
     case 'n':
-      // spec_n(scur, written, mods, args);
+      // is_error = spec_n(scur, written, mods, args);
       break;
     case 'p':
-      spec_p(scur, written, mods, args);
+      is_error = spec_p(scur, written, mods, args);
       break;
   }
 
   return is_error;
-}
-
-bool wcrtostr(SizeChar_t *mb, ConvMods_t *mods, wchar_t *wc, s21_size_t wc_sz) {
-  bool is_error = false;
-  bool prec_max = false;
-  bool nterm = false;
-
-  mbstate_t state;
-  s21_memset(&state, 0, sizeof(state));
-
-  char *mbcur = mb->array;
-
-  for (s21_size_t i = 0; !is_error && !prec_max && !nterm && i < wc_sz; ++i) {
-    char mbbuf[MB_LEN_MAX + 1] = "\0";
-    int wrch = wcrtomb(mbbuf, wc[i], &state);
-
-    if (wrch == -1) {
-      is_error = 1;
-    } else if ((int)mb->size + wrch > mods->prec && mods->prec >= 0) {
-      prec_max = true;
-      *mbcur = '\0';
-      mbcur += 1;
-    } else {
-      s21_strcpy(mbcur, mbbuf);
-      if (!*mbcur && mods->spec == 's') {
-        nterm = true;
-      } else {
-        mb->size = i < wc_sz - 1 ? mb->size + wrch : mb->size;
-        mbcur += wrch;
-      }
-    }
-  }
-
-  return is_error;
-}
-
-bool addwid(SizeChar_t *array, ConvMods_t *mods) {
-  char widfil = mods->zero ? '0' : ' ';
-  int widdif = mods->wid - array->size > 0 ? mods->wid - array->size : 0;
-  s21_size_t needed_capacity = array->size + widdif + 1;
-  bool is_error = false;
-
-  if (widdif > 0) {
-    if (needed_capacity > array->capacity) {
-      char *buf = malloc(needed_capacity);
-      is_error = !buf;
-      if (buf && !mods->minus) {
-        s21_memset(buf, widfil, widdif);
-        s21_memcpy(buf + widdif, array->array, array->size + 1);
-      } else if (buf && mods->minus) {
-        s21_memcpy(buf, array->array, array->size);
-        s21_memset(buf + array->size, widfil, widdif);
-        buf[array->size + widdif] = '\0';
-      }
-
-      if (buf) {
-        free(array->array);
-        array->array = buf;
-      }
-    } else {
-      if (!mods->minus) {
-        for (int i = array->size; i >= 0; --i) {
-          array->array[i + widdif] = array->array[i];
-        }
-        s21_memset(array->array, widfil, widdif);
-      } else {
-        s21_memset(array->array + array->size, widfil, widdif);
-        array->array[array->size + widdif] = '\0';
-      }
-    }
-
-    array->size += widdif;
-  }
-
-  return is_error;
-}
-
-int intlen(long long i) {
-  i = llabs(i);
-  int intlen = 1;
-
-  if (i >= 1000000000000000000) {
-    intlen = 19;
-  } else if (i >= 100000000000000000) {
-    intlen = 18;
-  } else if (i >= 10000000000000000) {
-    intlen = 17;
-  } else if (i >= 1000000000000000) {
-    intlen = 16;
-  } else if (i >= 100000000000000) {
-    intlen = 15;
-  } else if (i >= 10000000000000) {
-    intlen = 14;
-  } else if (i >= 1000000000000) {
-    intlen = 13;
-  } else if (i >= 100000000000) {
-    intlen = 12;
-  } else if (i >= 10000000000) {
-    intlen = 11;
-  } else if (i >= 1000000000) {
-    intlen = 10;
-  } else if (i >= 100000000) {
-    intlen = 9;
-  } else if (i >= 10000000) {
-    intlen = 8;
-  } else if (i >= 1000000) {
-    intlen = 7;
-  } else if (i >= 100000) {
-    intlen = 6;
-  } else if (i >= 10000) {
-    intlen = 5;
-  } else if (i >= 1000) {
-    intlen = 4;
-  } else if (i >= 100) {
-    intlen = 3;
-  } else if (i >= 10) {
-    intlen = 2;
-  } else if (i >= 0) {
-    intlen = 1;
-  }
-
-  return intlen;
-}
-
-int uintlen(unsigned long i) {
-  int intlen = 1;
-
-  if (i >= 10000000000000000000ULL) {
-    intlen = 20;
-  } else if (i >= 1000000000000000000) {
-    intlen = 19;
-  } else if (i >= 100000000000000000) {
-    intlen = 18;
-  } else if (i >= 10000000000000000) {
-    intlen = 17;
-  } else if (i >= 1000000000000000) {
-    intlen = 16;
-  } else if (i >= 100000000000000) {
-    intlen = 15;
-  } else if (i >= 10000000000000) {
-    intlen = 14;
-  } else if (i >= 1000000000000) {
-    intlen = 13;
-  } else if (i >= 100000000000) {
-    intlen = 12;
-  } else if (i >= 10000000000) {
-    intlen = 11;
-  } else if (i >= 1000000000) {
-    intlen = 10;
-  } else if (i >= 100000000) {
-    intlen = 9;
-  } else if (i >= 10000000) {
-    intlen = 8;
-  } else if (i >= 1000000) {
-    intlen = 7;
-  } else if (i >= 100000) {
-    intlen = 6;
-  } else if (i >= 10000) {
-    intlen = 5;
-  } else if (i >= 1000) {
-    intlen = 4;
-  } else if (i >= 100) {
-    intlen = 3;
-  } else if (i >= 10) {
-    intlen = 2;
-  } else {
-    intlen = 1;
-  }
-
-  return intlen;
 }
 
 bool spec_c(char **scur, int *written, ConvMods_t *mods, va_list *args) {
@@ -814,111 +642,113 @@ bool spec_p(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_f(char **scur, int *written, ConvMods_t *mods, va_list *args) {
-  uint128_t bits = 0;
-  int whole_part_len = 0;
-  int sign = 0;
-  bool is_error = false;
-  bool is_inf_nan = false;
-
-  if (mods->len == 'L') {
-    long double arg = va_arg(*args, long double);
-    s21_memcpy(&bits, &arg, sizeof(long double));
-    whole_part_len = fabsl(arg) ? ceill(log10l(fabsl(arg))) : 0;
-    sign = fltdec.sign || mods->space || mods->plus ? 1 : 0;
-
-  } else {
-    double arg = va_arg(*args, double);
-    s21_memcpy(&bits, &arg, sizeof(double));
-    whole_part_len = fabs(arg) ? ceil(log10(fabs(arg))) : 0;
-    sign = fltdec.sign || mods->space || mods->plus ? 1 : 0;
-  }
-
-  if (!is_error && !is_inf_nan) {
-    int prec = mods->prec < 0 ? 6 : mods->prec;
-    int dot = prec || (!prec && mods->hash) ? 1 : 0;
-    int arglen = whole_part_len + prec + dot + sign;
-    int wid = mods->wid < 0 ? 0 : mods->wid;
-    int widdif = wid - arglen < 0 ? 0 : wid - arglen;
-    int needed_capacity = arglen + widdif;
-
-    SizeChar_t buf = {0};
-    buf.size = arglen;
-    buf.capacity = needed_capacity;
-    buf.array = malloc(needed_capacity);
-    is_error = !buf.array;
-
-    mods->len == 'L'
-        ? flttostr(buf.array, bits, LDOUBLE_MANTISSA_BITS,
-                   LDOUBLE_EXPONENT_BITS, true, whole_part_len + prec)
-        : flttostr(buf.array, bits, DOUBLE_MANTISSA_BITS, DOUBLE_EXPONENT_BITS,
-                   false, whole_part_len + prec);
-  }
-
-  return is_error || is_inf_nan;
-}
-
-void flttostr(char *res, const uint128_t bits, const uint32_t manbits,
-              const uint32_t expbits, const bool explicit_leading_bit,
-              const int decdigits) {
-  const uint32_t bias = (1U << (expbits - 1)) - 1;
-  const bool ieee_sign = (bits >> (manbits + expbits)) & 1U;
-  const uint128_t ieee_man = bits & ((ONE << manbits) - 1);
-  const uint32_t ieee_exp =
-      (uint32_t)((bits >> manbits) & ((ONE << expbits) - 1));
-  bool zero_inf_nan = false;
-
-  if (ieee_exp == 0 && ieee_man == 0) {
-    *res++ = '0';
-    zero_inf_nan = true;
-  } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man == 0) {
-    for (const char *inf = "infinity"; *inf; ++res, ++inf) {
-      *res = *inf;
-    }
-    zero_inf_nan = true;
-  } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man != 0) {
-    for (const char *nan = "nan"; *nan; ++res, ++nan) {
-      *res = *nan;
-    }
-    zero_inf_nan = true;
-  }
-
-  if (!zero_inf_nan) {
-    /* f = m * 2^e */
-    int32_t e = 0;
-    uint128_t m = 0;
-
-    if (explicit_leading_bit) {
-      e = ieee_exp == 0 ? 1 - bias - manbits + 1
-                        : ieee_exp - bias - manbits + 1;
-      m = ieee_man;
-    } else {
-      e = ieee_exp == 0 ? 1 - bias - manbits : ieee_exp - bias - manbits;
-      m = (ONE << manbits) | ieee_man;
-    }
-
-    BigNum_t v = {0};
-
-    if (e >= 0) {
-      int32_t m_limbs = 1;
-      int32_t e_limbs = ceil(e / (float)LIMB_SIZE);
-
-      v.msb = e;
-      v.limbs = m_limbs + e_limbs;
-      v.num = (uint128_t *)calloc(v.limbs, sizeof(uint128_t));
-      v.e10 = 0;
-
-      mul2(&v, m, e);
-    } else {
-      e = -e;
-
-      v.msb = -1;
-      v.limbs = ceil((float)(decdigits * ceil(log2(10))) / sizeof(uint128_t));
-      v.num = (uint128_t *)calloc(v.limbs, sizeof(uint128_t));
-
-      div2(&v, m, e);
-    }
-  }
-}
-
-void div2(BigNum_t *v, const uint128_t m, const int32_t e) {}
+// bool spec_f(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+//   uint128_t bits = 0;
+//   int whole_part_len = 0;
+//   int sign = 0;
+//   bool is_error = false;
+//   bool is_inf_nan = false;
+//
+//   if (mods->len == 'L') {
+//     long double arg = va_arg(*args, long double);
+//     s21_memcpy(&bits, &arg, sizeof(long double));
+//     whole_part_len = fabsl(arg) ? ceill(log10l(fabsl(arg))) : 0;
+//     sign = fltdec.sign || mods->space || mods->plus ? 1 : 0;
+//
+//   } else {
+//     double arg = va_arg(*args, double);
+//     s21_memcpy(&bits, &arg, sizeof(double));
+//     whole_part_len = fabs(arg) ? ceil(log10(fabs(arg))) : 0;
+//     sign = fltdec.sign || mods->space || mods->plus ? 1 : 0;
+//   }
+//
+//   if (!is_error && !is_inf_nan) {
+//     int prec = mods->prec < 0 ? 6 : mods->prec;
+//     int dot = prec || (!prec && mods->hash) ? 1 : 0;
+//     int arglen = whole_part_len + prec + dot + sign;
+//     int wid = mods->wid < 0 ? 0 : mods->wid;
+//     int widdif = wid - arglen < 0 ? 0 : wid - arglen;
+//     int needed_capacity = arglen + widdif;
+//
+//     SizeChar_t buf = {0};
+//     buf.size = arglen;
+//     buf.capacity = needed_capacity;
+//     buf.array = malloc(needed_capacity);
+//     is_error = !buf.array;
+//
+//     mods->len == 'L'
+//         ? flttostr(buf.array, bits, LDOUBLE_MANTISSA_BITS,
+//                    LDOUBLE_EXPONENT_BITS, true, whole_part_len + prec)
+//         : flttostr(buf.array, bits, DOUBLE_MANTISSA_BITS,
+//         DOUBLE_EXPONENT_BITS,
+//                    false, whole_part_len + prec);
+//   }
+//
+//   return is_error || is_inf_nan;
+// }
+//
+// void flttostr(char *res, const uint128_t bits, const uint32_t manbits,
+//               const uint32_t expbits, const bool explicit_leading_bit,
+//               const int decdigits) {
+//   const uint32_t bias = (1U << (expbits - 1)) - 1;
+//   const bool ieee_sign = (bits >> (manbits + expbits)) & 1U;
+//   const uint128_t ieee_man = bits & ((ONE << manbits) - 1);
+//   const uint32_t ieee_exp =
+//       (uint32_t)((bits >> manbits) & ((ONE << expbits) - 1));
+//   bool zero_inf_nan = false;
+//
+//   if (ieee_exp == 0 && ieee_man == 0) {
+//     *res++ = '0';
+//     zero_inf_nan = true;
+//   } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man == 0) {
+//     for (const char *inf = "infinity"; *inf; ++res, ++inf) {
+//       *res = *inf;
+//     }
+//     zero_inf_nan = true;
+//   } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man != 0) {
+//     for (const char *nan = "nan"; *nan; ++res, ++nan) {
+//       *res = *nan;
+//     }
+//     zero_inf_nan = true;
+//   }
+//
+//   if (!zero_inf_nan) {
+//     /* f = m * 2^e */
+//     int32_t e = 0;
+//     uint128_t m = 0;
+//
+//     if (explicit_leading_bit) {
+//       e = ieee_exp == 0 ? 1 - bias - manbits + 1
+//                         : ieee_exp - bias - manbits + 1;
+//       m = ieee_man;
+//     } else {
+//       e = ieee_exp == 0 ? 1 - bias - manbits : ieee_exp - bias - manbits;
+//       m = (ONE << manbits) | ieee_man;
+//     }
+//
+//     BigNum_t v = {0};
+//
+//     if (e >= 0) {
+//       int32_t m_limbs = 1;
+//       int32_t e_limbs = ceil(e / (float)LIMB_SIZE);
+//
+//       v.msb = e;
+//       v.limbs = m_limbs + e_limbs;
+//       v.num = (uint128_t *)calloc(v.limbs, sizeof(uint128_t));
+//       v.e10 = 0;
+//
+//       mul2e(&v, m, e);
+//     } else {
+//       e = -e;
+//
+//       v.msb = -1;
+//       v.limbs = ceil((float)(decdigits * ceil(log2(10))) /
+//       sizeof(uint128_t)); v.num = (uint128_t *)calloc(v.limbs,
+//       sizeof(uint128_t));
+//
+//       div2(&v, m, e);
+//     }
+//   }
+// }
+//
+// void div2(BigNum_t *v, const uint128_t m, const int32_t e) {}
