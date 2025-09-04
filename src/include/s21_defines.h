@@ -1,6 +1,8 @@
 #ifndef S21_STRING_DEFINES_H
 #define S21_STRING_DEFINES_H
 
+#include <stdint.h>
+
 /* Common */
 typedef unsigned long s21_size_t;
 #define s21_byte_t unsigned char
@@ -17,7 +19,7 @@ typedef __uint128_t uint128_t;
 #define DOUBLE_EXPONENT_BITS 11
 
 /* s21_gmp.h */
-#define LIMB_SIZE 128
-typedef uint128_t limb_t;
+#define LIMB_SIZE 64
+typedef uint64_t limb_t;
 
 #endif
