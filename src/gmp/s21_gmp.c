@@ -1,9 +1,9 @@
 #include "../include/s21_gmp.h"
 
-void mpz_add(mpz_t *res, mpz_t *val1, mpz_t *val2) {
+void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   /* Copy val1, val2 in op1, op2 in case when val1 = res and/or val2 = res */
   mpz_t op1, op2;
-  mpz_cpy(&op1, val1), mpz_cpy(&op2, val2);
+  mpz_copy(&op1, val1), mpz_copy(&op2, val2);
 
   mpz_t *gr, *le;
   mpz_compare(&op1, &op2) >= 0 ? (gr = &op1, le = &op2)
@@ -47,10 +47,10 @@ void mpz_add(mpz_t *res, mpz_t *val1, mpz_t *val2) {
 }
 
 /* Better performance function based on gcc builtins */
-void mpz_add_gcc(mpz_t *res, mpz_t *val1, mpz_t *val2) {
+void mpz_add_gcc(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   /* Copy val1, val2 in op1, op2 in case when val1 = res and/or val2 = res */
   mpz_t op1, op2;
-  mpz_cpy(&op1, val1), mpz_cpy(&op2, val2);
+  mpz_copy(&op1, val1), mpz_copy(&op2, val2);
 
   mpz_t *gr, *le;
   mpz_compare(&op1, &op2) >= 0 ? (gr = &op1, le = &op2)
@@ -81,10 +81,10 @@ void mpz_add_gcc(mpz_t *res, mpz_t *val1, mpz_t *val2) {
 
 /* Doesn't return sign of subtraction */
 /* val1 always must be >= val2 */
-void mpz_sub(mpz_t *res, mpz_t *val1, mpz_t *val2) {
+void mpz_sub(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   /* Copy val1, val2 in op1, op2 in case when val1 = res and/or val2 = res */
   mpz_t op1, op2;
-  mpz_cpy(&op1, val1), mpz_cpy(&op2, val2);
+  mpz_copy(&op1, val1), mpz_copy(&op2, val2);
 
   mpz_custom_init(res, 0U, 0, op1.size, 0);
 
@@ -141,10 +141,10 @@ void mpz_sub(mpz_t *res, mpz_t *val1, mpz_t *val2) {
 /* Better performance function based on gcc builtins */
 /* Doesn't return sign of subtraction */
 /* val1 always must be >= val2 */
-void mpz_sub_gcc(mpz_t *res, mpz_t *val1, mpz_t *val2) {
+void mpz_sub_gcc(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   /* Copy val1, val2 in op1, op2 in case when val1 = res and/or val2 = res */
   mpz_t op1, op2;
-  mpz_cpy(&op1, val1), mpz_cpy(&op2, val2);
+  mpz_copy(&op1, val1), mpz_copy(&op2, val2);
 
   mpz_custom_init(res, 0U, 0, op1.size, 0);
 
@@ -173,12 +173,28 @@ void mpz_sub_gcc(mpz_t *res, mpz_t *val1, mpz_t *val2) {
   mpz_clear(&op1), mpz_clear(&op2);
 }
 
-void mpz_div(mpz_t *quo, mpz_t *rem, mpz_t *val1, mpz_t *val2) {
-  mpz_t work;
-  mpz_custom_init(&work, (uint64_t)0U, val1->size, val1->alloc, val1->e10);
-
-  if (val1->size < val2->size && mpz_msb(val1) < mpz_msb(val2)) {
+void mpz_div(mpz_t *quo, mpz_t *rem, const mpz_t *val1, const mpz_t *val2) {
+  if (mpz_compare(val1, val2) == -1) {
     mpz_init(quo);
-    mpz_cpy(rem, val1);
+    mpz_copy(rem, val1);
+  } else {
+    mpz_t minue, subtr;
+    mpz_copy(&minue, val1), mpz_copy(&subtr, val2);
+    mpz_realloc(&subtr, minue.alloc);
+
+    long long bitdif = bitlen(&minue) - bitlen(&subtr);
+
+    bitshiftl(&subtr, &subtr, bitdif);
+
+    for (; bitdif >= 0; --bitdif) {
+      bitshiftl(quo, quo, 1);
+      if (mpz_compare(&minue, &subtr) >= 0) {
+        mpz_sub(&minue, &minue, &subtr);
+        setbit(quo, 0, 0, 1U);
+      }
+      bitshiftr(&subtr, &subtr, 1);
+    }
+
+    mpz_copy(rem, &minue);
   }
 }
