@@ -29,7 +29,7 @@ static inline void mpz_init(mpz_t *val) {
   val->e10 = 0;
 }
 
-static inline void mpz_custom_init(mpz_t *val, const uint64_t d, const int size,
+static inline void mpz_custom_init(mpz_t *val, const limb_t d, const int size,
                                    const int alloc, const int e10) {
   if (val->d) {
     free(val->d);
@@ -63,13 +63,14 @@ static inline void mpz_cpy(mpz_t *dst, const mpz_t *src) {
 
 static inline unsigned getbit(const mpz_t *val, const int ilimb,
                               const int ibit) {
+  assert(ilimb >= 0 && ilimb < val->alloc);
   assert(ibit >= 0 && ibit < LIMB_SIZE);
   return (val->d[ilimb] >> ibit) & (limb_t)1U;
 }
 
 static inline void setbit(mpz_t *val, const int ilimb, const int ibit,
                           limb_t setbit) {
-  assert(ilimb < val->alloc);
+  assert(ilimb >= 0 && ilimb < val->alloc);
   assert(ibit >= 0 && ibit < LIMB_SIZE);
   val->d[ilimb] &= ~((limb_t)1U << ibit);
   val->d[ilimb] |= setbit << ibit;
@@ -103,10 +104,33 @@ static inline void bitshiftl(mpz_t *res, const mpz_t *val, const int shift) {
     }
   }
 
-  int size = 0;
+  int size = val->size - 1;
   for (; size != res->alloc && res->d[size]; ++size) {
   }
-  res->size = size;
+  res->size = size - 1;
+}
+
+/* Returns index of most significant bit in high word */
+static inline int mpz_msb(mpz_t *val) {
+  limb_t hword = val->size - 1;
+
+  /* De Bruijn Table */
+  static const int BitPosLookup[64] = {
+      -1, /* mpz_msb(0) = -1 */
+      1,  2,  53, 3,  7,  54, 27, 4,  38, 41, 8,  34, 55, 48, 28, 62,
+      5,  39, 46, 44, 42, 22, 9,  24, 35, 59, 56, 49, 18, 29, 11, 63,
+      52, 6,  26, 37, 40, 33, 47, 61, 45, 43, 21, 23, 58, 17, 10, 51,
+      25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12};
+
+  hword |= hword >> 1;
+  hword |= hword >> 2;
+  hword |= hword >> 4;
+  hword |= hword >> 8;
+  hword |= hword >> 16;
+  hword |= hword >> 32;
+  hword -= hword >> 1;
+
+  return BitPosLookup[((limb_t)(hword * 0x06EB14F9)) >> 27];
 }
 
 static inline void mpz_mul_2exp(mpz_t *res, const mpz_t *val, const int exp) {

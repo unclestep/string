@@ -20,6 +20,6 @@ typedef __uint128_t uint128_t;
 
 /* s21_gmp.h */
 #define LIMB_SIZE 64
-typedef uint64_t limb_t;
+typedef unsigned long long limb_t;
 
 #endif
