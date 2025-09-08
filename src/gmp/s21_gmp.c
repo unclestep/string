@@ -1,9 +1,43 @@
 #include "../include/s21_gmp.h"
 
+#ifdef USE_GCC_BUILTINS
+/* Better performance function based on gcc builtins */
 void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   /* Copy val1, val2 in op1, op2 in case when val1 = res and/or val2 = res */
   mpz_t op1, op2;
-  mpz_copy(&op1, val1), mpz_copy(&op2, val2);
+  mpz_set(&op1, val1), mpz_set(&op2, val2);
+
+  mpz_t *gr, *le;
+  mpz_compare(&op1, &op2) >= 0 ? (gr = &op1, le = &op2)
+                               : (gr = &op2, le = &op1);
+
+  mpz_custom_init(res, 0U, 0, gr->size + 1, 0);
+
+  limb_t carry = 0;
+  int cur_limb = 0;
+
+  for (; cur_limb != le->size; ++cur_limb) {
+    res->d[cur_limb] =
+        __builtin_addcll(gr->d[cur_limb], le->d[cur_limb], carry, &carry);
+  }
+
+  for (; cur_limb != gr->size; ++cur_limb) {
+    res->d[cur_limb] = __builtin_addcll(gr->d[cur_limb], 0U, carry, &carry);
+  }
+
+  if (carry) {
+    res->d[cur_limb] = carry;
+  }
+
+  res->size = carry ? cur_limb + 1 : cur_limb;
+
+  mpz_clear(&op1), mpz_clear(&op2);
+}
+#else
+void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
+  /* Copy val1, val2 in op1, op2 in case when val1 = res and/or val2 = res */
+  mpz_t op1, op2;
+  mpz_set(&op1, val1), mpz_set(&op2, val2);
 
   mpz_t *gr, *le;
   mpz_compare(&op1, &op2) >= 0 ? (gr = &op1, le = &op2)
@@ -45,46 +79,50 @@ void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
 
   mpz_clear(&op1), mpz_clear(&op2);
 }
+#endif
 
+#ifdef USE_GCC_BUILTINS
 /* Better performance function based on gcc builtins */
-void mpz_add_gcc(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
-  /* Copy val1, val2 in op1, op2 in case when val1 = res and/or val2 = res */
-  mpz_t op1, op2;
-  mpz_copy(&op1, val1), mpz_copy(&op2, val2);
-
-  mpz_t *gr, *le;
-  mpz_compare(&op1, &op2) >= 0 ? (gr = &op1, le = &op2)
-                               : (gr = &op2, le = &op1);
-
-  mpz_custom_init(res, 0U, 0, gr->size + 1, 0);
-
-  limb_t carry = 0;
-  int cur_limb = 0;
-
-  for (; cur_limb != le->size; ++cur_limb) {
-    res->d[cur_limb] =
-        __builtin_addcll(gr->d[cur_limb], le->d[cur_limb], carry, &carry);
-  }
-
-  for (; cur_limb != gr->size; ++cur_limb) {
-    res->d[cur_limb] = __builtin_addcll(gr->d[cur_limb], 0U, carry, &carry);
-  }
-
-  if (carry) {
-    res->d[cur_limb] = carry;
-  }
-
-  res->size = carry ? cur_limb + 1 : cur_limb;
-
-  mpz_clear(&op1), mpz_clear(&op2);
-}
-
 /* Doesn't return sign of subtraction */
 /* val1 always must be >= val2 */
 void mpz_sub(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   /* Copy val1, val2 in op1, op2 in case when val1 = res and/or val2 = res */
   mpz_t op1, op2;
   mpz_copy(&op1, val1), mpz_copy(&op2, val2);
+
+  mpz_custom_init(res, 0U, 0, op1.size, 0);
+
+  limb_t borrow = 0;
+  int cur_limb = 0;
+
+  for (; cur_limb != op2.size; ++cur_limb) {
+    res->d[cur_limb] =
+        __builtin_subcll(op1.d[cur_limb], op2.d[cur_limb], borrow, &borrow);
+  }
+
+  for (; cur_limb != op1.size && borrow; ++cur_limb) {
+    res->d[cur_limb] = __builtin_subcll(op1.d[cur_limb], 0, borrow, &borrow);
+  }
+
+  if (!borrow && cur_limb < op1.size) {
+    s21_memcpy(res->d + cur_limb, op1.d + cur_limb,
+               (op1.size - cur_limb) * sizeof(limb_t));
+  }
+
+  int size = op1.size - 1;
+  for (; size >= 0 && !res->d[size]; --size) {
+  }
+  res->size = size + 1;
+
+  mpz_clear(&op1), mpz_clear(&op2);
+}
+#else
+/* Doesn't return sign of subtraction */
+/* val1 always must be >= val2 */
+void mpz_sub(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
+  /* Copy val1, val2 in op1, op2 in case when val1 = res and/or val2 = res */
+  mpz_t op1, op2;
+  mpz_set(&op1, val1), mpz_set(&op2, val2);
 
   mpz_custom_init(res, 0U, 0, op1.size, 0);
 
@@ -137,49 +175,15 @@ void mpz_sub(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
 
   mpz_clear(&op1), mpz_clear(&op2);
 }
-
-/* Better performance function based on gcc builtins */
-/* Doesn't return sign of subtraction */
-/* val1 always must be >= val2 */
-void mpz_sub_gcc(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
-  /* Copy val1, val2 in op1, op2 in case when val1 = res and/or val2 = res */
-  mpz_t op1, op2;
-  mpz_copy(&op1, val1), mpz_copy(&op2, val2);
-
-  mpz_custom_init(res, 0U, 0, op1.size, 0);
-
-  limb_t borrow = 0;
-  int cur_limb = 0;
-
-  for (; cur_limb != op2.size; ++cur_limb) {
-    res->d[cur_limb] =
-        __builtin_subcll(op1.d[cur_limb], op2.d[cur_limb], borrow, &borrow);
-  }
-
-  for (; cur_limb != op1.size && borrow; ++cur_limb) {
-    res->d[cur_limb] = __builtin_subcll(op1.d[cur_limb], 0, borrow, &borrow);
-  }
-
-  if (!borrow && cur_limb < op1.size) {
-    s21_memcpy(res->d + cur_limb, op1.d + cur_limb,
-               (op1.size - cur_limb) * sizeof(limb_t));
-  }
-
-  int size = op1.size - 1;
-  for (; size >= 0 && !res->d[size]; --size) {
-  }
-  res->size = size + 1;
-
-  mpz_clear(&op1), mpz_clear(&op2);
-}
+#endif
 
 void mpz_div(mpz_t *quo, mpz_t *rem, const mpz_t *val1, const mpz_t *val2) {
   if (mpz_compare(val1, val2) == -1) {
     mpz_init(quo);
-    mpz_copy(rem, val1);
+    mpz_set(rem, val1);
   } else {
     mpz_t minue, subtr;
-    mpz_copy(&minue, val1), mpz_copy(&subtr, val2);
+    mpz_set(&minue, val1), mpz_set(&subtr, val2);
     mpz_realloc(&subtr, minue.alloc);
 
     long long bitdif = bitlen(&minue) - bitlen(&subtr);
@@ -195,6 +199,6 @@ void mpz_div(mpz_t *quo, mpz_t *rem, const mpz_t *val1, const mpz_t *val2) {
       bitshiftr(&subtr, &subtr, 1);
     }
 
-    mpz_copy(rem, &minue);
+    mpz_set(rem, &minue);
   }
 }

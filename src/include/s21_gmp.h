@@ -20,36 +20,21 @@ void mpz_sub(mpz_t *res, const mpz_t *val1, const mpz_t *val2);
 void mpz_div(mpz_t *quo, mpz_t *rem, const mpz_t *val1, const mpz_t *val2);
 
 static inline void mpz_init(mpz_t *val) {
-  if (val->d) {
-    free(val->d);
-  }
-
   val->d = (limb_t *)calloc(1, sizeof(limb_t));
-  if (!val->d) {
-    printf("Failed to allocate the memory.\n");
-    exit(EXIT_FAILURE);
-  }
-  val->size = 1;
+  val->size = 0;
   val->alloc = 1;
   val->e10 = 0;
 }
 
-static inline void mpz_custom_init(mpz_t *val, const limb_t d,
-                                   const mp_size_t size, const mp_size_t alloc,
-                                   const mp_size_t e10) {
-  if (val->d) {
-    free(val->d);
-  }
+static inline void mpz_realloc(mpz_t *val, mp_size_t new_alloc) {
+  limb_t *new_d = (limb_t *)realloc(val->d, new_alloc * sizeof(limb_t));
 
-  val->d = (limb_t *)calloc(alloc, sizeof(limb_t));
-  if (!val->d) {
-    printf("Failed to allocate the memory.\n");
-    exit(EXIT_FAILURE);
+  val->d = new_d;
+  if (new_alloc > val->alloc) {
+    s21_memset(val->d + val->alloc, 0,
+               (new_alloc - val->alloc) * sizeof(limb_t));
   }
-  val->d[0] = (limb_t)d;
-  val->size = size;
-  val->alloc = alloc;
-  val->e10 = e10;
+  val->alloc = new_alloc;
 }
 
 static inline void mpz_clear(mpz_t *val) {
@@ -61,110 +46,60 @@ static inline void mpz_clear(mpz_t *val) {
   val->e10 = 0;
 }
 
-/* Makes full duplicate of src and writes in dst */
-static inline void mpz_copy(mpz_t *dst, const mpz_t *src) {
-  if (dst->d) {
-    free(dst->d);
+static inline void mpz_set_ull(mpz_t *val, const unsigned long long d) {
+  val->d[0] = d;
+  val->size = !d ? 0 : 1;
+}
+
+static inline void mpz_set(mpz_t *dst, const mpz_t *src) {
+  if (dst->alloc < src->size) {
+    mpz_realloc(dst, src->size);
   }
 
-  dst->d = (limb_t *)malloc(sizeof(limb_t) * src->alloc);
-  if (!dst->d) {
-    printf("Failed to allocate the memory.\n");
-    exit(EXIT_FAILURE);
-  }
-  s21_memcpy(dst->d, src->d, sizeof(limb_t) * src->alloc);
+  s21_memcpy(dst->d, src->d, src->size * sizeof(limb_t));
+  dst->size = src->size;
+  dst->e10 = src->e10;
+}
+
+static inline void mpz_init_set_ull(mpz_t *val, const unsigned long long d) {
+  val->d = (limb_t *)malloc(sizeof(limb_t));
+  val->d[0] = d;
+  val->size = !d ? 0 : 1;
+  val->alloc = 1;
+  val->e10 = 0;
+}
+
+static inline void mpz_init_set(mpz_t *dst, mpz_t *src) {
+  dst->d = (limb_t *)malloc(src->alloc * sizeof(limb_t));
+  s21_memcpy(dst->d, src->d, src->alloc * sizeof(limb_t));
   dst->size = src->size;
   dst->alloc = src->alloc;
   dst->e10 = src->e10;
 }
 
-/* Sets value from src in dst */
-/* Uses already allocated memory */
-static inline void mpz_set(mpz_t *dst, const mpz_t *src) {
-  assert(src->size <= dst->alloc);
-  s21_memcpy(dst->d, src->d, sizeof(limb_t) * src->size);
-  s21_memset(dst->d + src->size, 0, sizeof(limb_t) * (dst->alloc - src->size));
-  dst->size = src->size;
-  dst->e10 = src->e10;
-}
-
-static inline void mpz_realloc(mpz_t *val, mp_size_t new_alloc) {
-  limb_t *new_d = (limb_t *)realloc(val->d, sizeof(limb_t) * new_alloc);
-  if (!new_d) {
-    printf("Failed to realloc.\n");
-    exit(EXIT_FAILURE);
-  } else {
-    val->d = new_d;
-    if (new_alloc > val->alloc) {
-      s21_memset(val->d + val->alloc, 0,
-                 sizeof(limb_t) * (new_alloc - val->alloc));
-    }
-    val->alloc = new_alloc;
-  }
-}
-
-static inline unsigned getbit(const mpz_t *val, const mp_size_t ilimb,
-                              const mp_size_t ibit) {
+static inline unsigned mpz_getbit(const mpz_t *val, const mp_size_t ilimb,
+                                  const mp_size_t ibit) {
   assert(ilimb >= 0 && ilimb < val->alloc);
   assert(ibit >= 0 && ibit < LIMB_SIZE);
   return (val->d[ilimb] >> ibit) & (limb_t)1U;
 }
 
-static inline void setbit(mpz_t *val, const int ilimb, const int ibit,
-                          limb_t setbit) {
+static inline void mpz_setbit(mpz_t *val, const int ilimb, const int ibit,
+                              limb_t setbit) {
   assert(ilimb >= 0 && ilimb < val->alloc);
   assert(ibit >= 0 && ibit < LIMB_SIZE);
   val->d[ilimb] &= ~((limb_t)1U << ibit);
   val->d[ilimb] |= setbit << ibit;
 }
 
-static inline void bitshiftr(mpz_t *res, const mpz_t *val, const int shift) {
-  if (res != val) {
-    mpz_cpy(res, val);
-  }
-
-  int cur_limb = 0;
-
-  for (int i = 0; i != shift; ++i) {
-    for (cur_limb = 0; cur_limb != res->alloc && res->d[cur_limb]; ++cur_limb) {
-      res->d[cur_limb] >>= 1;
-      if (cur_limb + 1 < res->alloc) {
-        setbit(res, cur_limb, LIMB_SIZE - 1, getbit(res, cur_limb + 1, 0));
-      }
-    }
-  }
-
-  res->size = cur_limb;
-}
-
-static inline void bitshiftl(mpz_t *res, const mpz_t *val, const int shift) {
-  if (res != val) {
-    mpz_cpy(res, val);
-  }
-
-  for (int i = 0; i != shift; ++i) {
-    for (int cur_limb = res->alloc - 1; cur_limb >= 0; --cur_limb) {
-      res->d[cur_limb] <<= 1;
-      if (cur_limb - 1 >= 0 && res->d[cur_limb - 1]) {
-        setbit(res, cur_limb, 0, getbit(res, cur_limb - 1, LIMB_SIZE - 1));
-      }
-    }
-  }
-
-  int size = val->size - 1;
-  for (; size != res->alloc && res->d[size]; ++size) {
-  }
-  res->size = size - 1;
-}
-
-static inline long long bitlen(mpz_t *val) {
-  int ihword = val->size - 1;
-  limb_t hword = val->d[ihword];
-  long long bitlen = ihword * LIMB_SIZE;
+/* Returns index of most significant bit in high word */
+static inline int mpz_msb(const mpz_t *val) {
+  limb_t hword = val->d[val->size - 1];
+  int msb = -1;
 
   if (hword) {
 #ifdef USE_GCC_BUILTINS
-    bitlen += LIMB_SIZE - __builtin_clzll(hword);
+    msb = LIMB_SIZE - __builtin_clzll(hword) - 1;
 #else
     /* De Bruijn Table */
     static const int BitPosLookup[64] = {
@@ -180,22 +115,101 @@ static inline long long bitlen(mpz_t *val) {
     hword |= hword >> 16;
     hword |= hword >> 32;
 
-    bitlen += BitPosLookup[((limb_t)(hword * 0x022FDD63CC95386DUL)) >> 58] + 1;
+    msb = BitPosLookup[((limb_t)(hword * 0x022FDD63CC95386DUL)) >> 58];
 #endif
   }
 
-  return bitlen;
+  return msb;
+}
+
+static inline long long mpz_bitlen(mpz_t *val) {
+  return !val->size
+             ? 0LL
+             : (long long)((val->size - 1) * LIMB_SIZE + mpz_msb(val) + 1);
+}
+
+static inline void mpz_bitshiftr(mpz_t *res, const mpz_t *val,
+                                 const mp_size_t shift) {
+  if (res != val) {
+    mpz_set(res, val);
+  }
+
+  mp_size_t cur = 0;
+  mp_size_t big_shift = shift / LIMB_SIZE;
+  mp_size_t small_shift = shift % LIMB_SIZE;
+
+  bool is_zero = false;
+
+  if (big_shift >= res->size) {
+    s21_memset(res->d, 0, res->size * sizeof(limb_t));
+    res->size = 0;
+    is_zero = true;
+  }
+
+  if (!is_zero && big_shift) {
+    for (; cur != res->size - big_shift; ++cur) {
+      res->d[cur] = res->d[cur + big_shift];
+    }
+    s21_memset(res->d + cur, 0, (res->size - cur) * sizeof(limb_t));
+    res->size -= big_shift;
+  }
+
+  if (!is_zero && small_shift) {
+    for (cur = 0; cur != res->size; ++cur) {
+      res->d[cur] >>= small_shift;
+      if (cur + 1 < res->size) {
+        limb_t carry = res->d[cur + 1] & (((limb_t)1 << small_shift) - 1);
+        res->d[cur] |= carry << (LIMB_SIZE - small_shift);
+      }
+    }
+
+    for (; res->size != 0 && !res->d[res->size - 1]; --res->size) {
+    }
+  }
+}
+
+static inline void mpz_bitshiftl(mpz_t *res, const mpz_t *val,
+                                 const mp_size_t shift) {
+  mp_size_t new_size = val->size + (mpz_msb(val) + 1 + shift) / LIMB_SIZE;
+  if (res->alloc < new_size) {
+    mpz_realloc(res, new_size);
+  }
+  if (res != val) {
+    mpz_set(res, val);
+  }
+
+  mp_size_t big_shift = shift / LIMB_SIZE;
+  mp_size_t small_shift = shift % LIMB_SIZE;
+
+  if (big_shift) {
+    for (mp_size_t cur = res->size + big_shift; cur != big_shift; --cur) {
+      res->d[cur - 1] = res->d[cur - 1 - big_shift];
+    }
+    s21_memset(res->d, 0, big_shift * sizeof(limb_t));
+  }
+
+  if (small_shift) {
+    for (mp_size_t cur = new_size; cur != 0; --cur) {
+      res->d[cur - 1] <<= small_shift;
+      if (cur > 1) {
+        limb_t carry = res->d[cur - 2] >> (LIMB_SIZE - small_shift);
+        res->d[cur - 1] |= carry;
+      }
+    }
+  }
+
+  res->size = new_size;
 }
 
 static inline void mpz_mul_2exp(mpz_t *res, const mpz_t *val, const int exp) {
-  bitshiftl(res, val, exp);
+  mpz_bitshiftl(res, val, exp);
 }
 
 static inline void mpz_mul10(mpz_t *res, const mpz_t *val) {
   mpz_t add1, add2;
   mpz_init(&add1), mpz_init(&add2);
 
-  bitshiftl(&add1, val, 3), bitshiftl(&add2, val, 2);
+  mpz_bitshiftl(&add1, val, 3), mpz_bitshiftl(&add2, val, 2);
   mpz_add(res, &add1, &add2);
 
   mpz_clear(&add1);
