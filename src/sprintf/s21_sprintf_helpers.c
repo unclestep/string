@@ -26,7 +26,7 @@ int uintlen(unsigned long long i) {
   return intlen;
 }
 
-bool wcrtostr(SizeChar_t *mb, ConvMods_t *mods, wchar_t *wc, s21_size_t wc_sz) {
+bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz) {
   bool is_error = false;
   bool prec_max = false;
   bool nterm = false;
@@ -60,15 +60,15 @@ bool wcrtostr(SizeChar_t *mb, ConvMods_t *mods, wchar_t *wc, s21_size_t wc_sz) {
   return is_error;
 }
 
-bool addwid(SizeChar_t *array, ConvMods_t *mods) {
+bool addwid(sc_t *array, conv_t *mods) {
   char widfil = mods->zero ? '0' : ' ';
   int widdif = mods->wid - array->size > 0 ? mods->wid - array->size : 0;
-  s21_size_t needed_capacity = array->size + widdif + 1;
+  s21_size_t needed_alloc = array->size + widdif + 1;
   bool is_error = false;
 
   if (widdif > 0) {
-    if (needed_capacity > array->capacity) {
-      char *buf = malloc(needed_capacity);
+    if (needed_alloc > array->alloc) {
+      char *buf = malloc(needed_alloc);
       is_error = !buf;
       if (buf && !mods->minus) {
         s21_memset(buf, widfil, widdif);

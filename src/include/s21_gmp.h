@@ -15,10 +15,12 @@ typedef struct mpz_t {
   mp_size_t e10;   /* For scientific notation */
 } mpz_t;
 
+/* Arithmetic Functions */
 void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2);
 void mpz_sub(mpz_t *res, const mpz_t *val1, const mpz_t *val2);
 void mpz_div(mpz_t *quo, mpz_t *rem, const mpz_t *val1, const mpz_t *val2);
 
+/* Initialization and Assignment Functions */
 static inline void mpz_init(mpz_t *val) {
   val->d = (limb_t *)calloc(1, sizeof(limb_t));
   val->size = 0;
@@ -26,7 +28,7 @@ static inline void mpz_init(mpz_t *val) {
   val->e10 = 0;
 }
 
-static inline void mpz_realloc(mpz_t *val, mp_size_t new_alloc) {
+static inline void mpz_realloc(mpz_t *val, const mp_size_t new_alloc) {
   limb_t *new_d = (limb_t *)realloc(val->d, new_alloc * sizeof(limb_t));
 
   val->d = new_d;
@@ -69,7 +71,7 @@ static inline void mpz_init_set_ull(mpz_t *val, const unsigned long long d) {
   val->e10 = 0;
 }
 
-static inline void mpz_init_set(mpz_t *dst, mpz_t *src) {
+static inline void mpz_init_set(mpz_t *dst, const mpz_t *src) {
   dst->d = (limb_t *)malloc(src->alloc * sizeof(limb_t));
   s21_memcpy(dst->d, src->d, src->alloc * sizeof(limb_t));
   dst->size = src->size;
@@ -77,6 +79,22 @@ static inline void mpz_init_set(mpz_t *dst, mpz_t *src) {
   dst->e10 = src->e10;
 }
 
+/* Comparison Functions */
+static inline int mpz_cmp(const mpz_t *val1, const mpz_t *val2) {
+  int result = 0;
+
+  result = val1->size > val2->size ? 1 : -1;
+
+  if (!result) {
+    for (int cur_limb = val1->size - 1; !result && cur_limb >= 0; --cur_limb) {
+      result = val1->d[cur_limb] > val2->d[cur_limb] ? 1 : -1;
+    }
+  }
+
+  return result;
+}
+
+/* Logical and Bit Manipulation Functions */
 static inline unsigned mpz_getbit(const mpz_t *val, const mp_size_t ilimb,
                                   const mp_size_t ibit) {
   assert(ilimb >= 0 && ilimb < val->alloc);
@@ -122,7 +140,7 @@ static inline int mpz_msb(const mpz_t *val) {
   return msb;
 }
 
-static inline long long mpz_bitlen(mpz_t *val) {
+static inline long long mpz_bitlen(const mpz_t *val) {
   return !val->size
              ? 0LL
              : (long long)((val->size - 1) * LIMB_SIZE + mpz_msb(val) + 1);
@@ -134,7 +152,7 @@ static inline void mpz_bitshiftr(mpz_t *res, const mpz_t *val,
     mpz_set(res, val);
   }
 
-  mp_size_t cur = 0;
+  mp_size_t cur_limb = 0;
   mp_size_t big_shift = shift / LIMB_SIZE;
   mp_size_t small_shift = shift % LIMB_SIZE;
 
@@ -147,19 +165,19 @@ static inline void mpz_bitshiftr(mpz_t *res, const mpz_t *val,
   }
 
   if (!is_zero && big_shift) {
-    for (; cur != res->size - big_shift; ++cur) {
-      res->d[cur] = res->d[cur + big_shift];
+    for (; cur_limb != res->size - big_shift; ++cur_limb) {
+      res->d[cur_limb] = res->d[cur_limb + big_shift];
     }
-    s21_memset(res->d + cur, 0, (res->size - cur) * sizeof(limb_t));
+    s21_memset(res->d + cur_limb, 0, (res->size - cur_limb) * sizeof(limb_t));
     res->size -= big_shift;
   }
 
   if (!is_zero && small_shift) {
-    for (cur = 0; cur != res->size; ++cur) {
-      res->d[cur] >>= small_shift;
-      if (cur + 1 < res->size) {
-        limb_t carry = res->d[cur + 1] & (((limb_t)1 << small_shift) - 1);
-        res->d[cur] |= carry << (LIMB_SIZE - small_shift);
+    for (cur_limb = 0; cur_limb != res->size; ++cur_limb) {
+      res->d[cur_limb] >>= small_shift;
+      if (cur_limb + 1 < res->size) {
+        limb_t carry = res->d[cur_limb + 1] & (((limb_t)1 << small_shift) - 1);
+        res->d[cur_limb] |= carry << (LIMB_SIZE - small_shift);
       }
     }
 
@@ -182,18 +200,19 @@ static inline void mpz_bitshiftl(mpz_t *res, const mpz_t *val,
   mp_size_t small_shift = shift % LIMB_SIZE;
 
   if (big_shift) {
-    for (mp_size_t cur = res->size + big_shift; cur != big_shift; --cur) {
-      res->d[cur - 1] = res->d[cur - 1 - big_shift];
+    for (mp_size_t cur_limb = res->size + big_shift; cur_limb != big_shift;
+         --cur_limb) {
+      res->d[cur_limb - 1] = res->d[cur_limb - 1 - big_shift];
     }
     s21_memset(res->d, 0, big_shift * sizeof(limb_t));
   }
 
   if (small_shift) {
-    for (mp_size_t cur = new_size; cur != 0; --cur) {
-      res->d[cur - 1] <<= small_shift;
-      if (cur > 1) {
-        limb_t carry = res->d[cur - 2] >> (LIMB_SIZE - small_shift);
-        res->d[cur - 1] |= carry;
+    for (mp_size_t cur_limb = new_size; cur_limb != 0; --cur_limb) {
+      res->d[cur_limb - 1] <<= small_shift;
+      if (cur_limb > 1) {
+        limb_t carry = res->d[cur_limb - 2] >> (LIMB_SIZE - small_shift);
+        res->d[cur_limb - 1] |= carry;
       }
     }
   }
@@ -201,6 +220,22 @@ static inline void mpz_bitshiftl(mpz_t *res, const mpz_t *val,
   res->size = new_size;
 }
 
+static inline void mpz_and(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
+  const mpz_t *gr, *le;
+  val1->size >= val2->size ? (gr = val1, le = val2) : (gr = val2, le = val1);
+
+  mpz_realloc(res, le->size);
+
+  for (mp_size_t cur_limb = 0; cur_limb < le->size; ++cur_limb) {
+    res->d[cur_limb] = gr->d[cur_limb] & le->d[cur_limb];
+  }
+
+  for (res->size = le->size; res->size > 0 && !res->d[res->size - 1];
+       --res->size) {
+  }
+}
+
+/* Fast Arithmetic Functions */
 static inline void mpz_mul_2exp(mpz_t *res, const mpz_t *val, const int exp) {
   mpz_bitshiftl(res, val, exp);
 }
@@ -212,30 +247,35 @@ static inline void mpz_mul10(mpz_t *res, const mpz_t *val) {
   mpz_bitshiftl(&add1, val, 3), mpz_bitshiftl(&add2, val, 2);
   mpz_add(res, &add1, &add2);
 
-  mpz_clear(&add1);
-  mpz_clear(&add2);
+  mpz_clear(&add1), mpz_clear(&add2);
 }
 
-static inline void mpz_idiv10(mpz_t *quo, mpz_t *rem, mpz_t *val) {}
+/* Returns integer result of division: quotient and remainder */
+static inline void mpz_idiv_2exp(mpz_t *quo, mpz_t *rem, const mpz_t *val,
+                                 const int exp) {
+  mpz_bitshiftr(quo, val, exp);
 
-static inline void mpz_to_str(char *str, mpz_t *val) {}
+  mpz_t mask, one;
+  mpz_init_set_ull(&mask, 1ULL), mpz_init_set_ull(&one, 1ULL);
+  mpz_bitshiftl(&mask, &mask, exp);
+  mpz_sub(&mask, &mask, &one);
 
-static inline int mpz_compare(const mpz_t *val1, const mpz_t *val2) {
-  int result = 0;
+  mpz_and(rem, val, &mask);
 
-  result = val1->size > val2->size ? 1 : -1;
-
-  if (!result) {
-    for (int cur_limb = val1->size - 1; !result && cur_limb >= 0; --cur_limb) {
-      result = val1->d[cur_limb] > val2->d[cur_limb] ? 1 : -1;
-    }
-  }
-
-  return result;
+  mpz_clear(&mask), mpz_clear(&one);
 }
 
-static inline void fdiv_2exp(char *res, mpz_t *v, int e, int decdigits) {}
+/* Returns fractional result of division: [fff.ffffff]
+ * immediately converted to a string */
+static inline void mpz_fdiv_2exp(sc_t *res, const mpz_t *val, const int e,
+                                 const int decdigits) {}
 
-static inline void idiv_2exp(mpz_t *q, mpz_t *r, mpz_t *v, int e) {}
+static inline void mpz_div10(mpz_t *quo, mpz_t *rem, const mpz_t *val) {
+  mpz_t ten;
+  mpz_init_set_ull(&ten, 10ULL);
+  mpz_div(quo, rem, val, &ten);
+}
+
+static inline void mpz_get_str(char *str, mpz_t *val) {}
 
 #endif

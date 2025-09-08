@@ -18,6 +18,25 @@ typedef __uint128_t uint128_t;
 #define DOUBLE_MANTISSA_BITS 52
 #define DOUBLE_EXPONENT_BITS 11
 
+typedef struct conv_t {
+  bool minus;
+  bool plus;
+  bool space;
+  bool hash;
+  bool zero;
+  int wid;
+  int prec;
+  int len;
+  int spec;
+} conv_t;
+
+/* Size Char */
+typedef struct sc_t {
+  char *array;
+  s21_size_t size;
+  s21_size_t alloc;
+} sc_t;
+
 /* s21_gmp.h */
 #define LIMB_SIZE 64
 typedef unsigned long long limb_t;

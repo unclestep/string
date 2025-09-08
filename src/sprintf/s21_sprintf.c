@@ -26,15 +26,15 @@ int s21_sprintf(char *str, const char *format, ...) {
 
 bool datatostr(char **scur, const char **fcur, int *written, va_list *args) {
   bool is_error = false;
-  ConvMods_t mods = {.minus = 0,
-                     .plus = 0,
-                     .space = 0,
-                     .hash = 0,
-                     .zero = 0,
-                     .wid = -1,
-                     .prec = -1,
-                     .len = -1,
-                     .spec = -1};
+  conv_t mods = {.minus = 0,
+                 .plus = 0,
+                 .space = 0,
+                 .hash = 0,
+                 .zero = 0,
+                 .wid = -1,
+                 .prec = -1,
+                 .len = -1,
+                 .spec = -1};
 
   is_error = get_convmods(fcur, &mods, args);
   if (!is_error) {
@@ -44,7 +44,7 @@ bool datatostr(char **scur, const char **fcur, int *written, va_list *args) {
   return is_error;
 }
 
-bool get_convmods(const char **fcur, ConvMods_t *mods, va_list *args) {
+bool get_convmods(const char **fcur, conv_t *mods, va_list *args) {
   ++*fcur;
   bool is_error = false;
   char ch = '\0';
@@ -106,7 +106,7 @@ bool get_convmods(const char **fcur, ConvMods_t *mods, va_list *args) {
   return is_error;
 }
 
-void adjust_convmods(ConvMods_t *mods) {
+void adjust_convmods(conv_t *mods) {
   if (mods->plus || s21_strchr("csoxXu", mods->spec)) {
     mods->space = false;
   }
@@ -117,7 +117,7 @@ void adjust_convmods(ConvMods_t *mods) {
   }
 }
 
-bool convert(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+bool convert(char **scur, int *written, conv_t *mods, va_list *args) {
   bool is_error = false;
 
   switch (mods->spec) {
@@ -166,12 +166,12 @@ bool convert(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_c(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+bool spec_c(char **scur, int *written, conv_t *mods, va_list *args) {
   mods->prec = -1;
 
-  SizeChar_t buf = {0};
-  buf.capacity = (MB_LEN_MAX + 1) * 3;
-  buf.array = malloc(buf.capacity);
+  sc_t buf = {0};
+  buf.alloc = (MB_LEN_MAX + 1) * 3;
+  buf.array = malloc(buf.alloc);
   bool is_error = !buf.array;
 
   if (!is_error) {
@@ -207,9 +207,9 @@ bool spec_c(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_s(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+bool spec_s(char **scur, int *written, conv_t *mods, va_list *args) {
   bool is_error = false;
-  SizeChar_t buf = {0};
+  sc_t buf = {0};
   s21_size_t szwnt = 0;
 
   if (mods->len == 'l') {
@@ -219,8 +219,8 @@ bool spec_s(char **scur, int *written, ConvMods_t *mods, va_list *args) {
     }
     szwnt += 1;
 
-    buf.capacity = szwnt * MB_CUR_MAX * 3;
-    buf.array = malloc(buf.capacity);
+    buf.alloc = szwnt * MB_CUR_MAX * 3;
+    buf.array = malloc(buf.alloc);
     is_error = !buf.array;
 
     if (!is_error) {
@@ -230,8 +230,8 @@ bool spec_s(char **scur, int *written, ConvMods_t *mods, va_list *args) {
     char *ca = va_arg(*args, char *);
     szwnt = s21_strlen(ca) + 1;
 
-    buf.capacity = szwnt * 3;
-    buf.array = malloc(buf.capacity);
+    buf.alloc = szwnt * 3;
+    buf.array = malloc(buf.alloc);
     is_error = !buf.array;
 
     if (!is_error) {
@@ -260,9 +260,9 @@ bool spec_s(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_di(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+bool spec_di(char **scur, int *written, conv_t *mods, va_list *args) {
   bool is_error = false;
-  SizeChar_t buf = {0};
+  sc_t buf = {0};
 
   long long arg = 0;
 
@@ -283,11 +283,11 @@ bool spec_di(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   int widdif = mods->wid - (arglen + precdif + sign) > 0
                    ? mods->wid - (arglen + precdif + sign)
                    : 0;
-  int needed_capacity = arglen + precdif + sign + widdif + 1;
+  int needed_alloc = arglen + precdif + sign + widdif + 1;
 
-  buf.capacity = needed_capacity;
+  buf.alloc = needed_alloc;
   buf.size = precdif + sign + arglen;
-  buf.array = malloc(needed_capacity);
+  buf.array = malloc(needed_alloc);
   char *bufcur = buf.array;
   is_error = !buf.array;
 
@@ -338,9 +338,9 @@ bool spec_di(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+bool spec_o(char **scur, int *written, conv_t *mods, va_list *args) {
   bool is_error = false;
-  SizeChar_t buf = {0};
+  sc_t buf = {0};
 
   unsigned long arg = 0;
 
@@ -378,10 +378,10 @@ bool spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args) {
       (prec - arglen > 0) || (!arg && mods->prec) ? prec - arglen : mods->hash;
   int widdif =
       mods->wid - (arglen + precdif) > 0 ? mods->wid - (arglen + precdif) : 0;
-  int needed_capacity = arglen + precdif + widdif + 1;
-  buf.capacity = needed_capacity;
+  int needed_alloc = arglen + precdif + widdif + 1;
+  buf.alloc = needed_alloc;
   buf.size = precdif + arglen;
-  buf.array = malloc(needed_capacity);
+  buf.array = malloc(needed_alloc);
   char *bufcur = buf.array;
   is_error = !buf.array;
 
@@ -415,9 +415,9 @@ bool spec_o(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_xX(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+bool spec_xX(char **scur, int *written, conv_t *mods, va_list *args) {
   bool is_error = false;
-  SizeChar_t buf = {0};
+  sc_t buf = {0};
 
   unsigned long arg = 0;
 
@@ -459,10 +459,10 @@ bool spec_xX(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   int widdif = mods->wid - (arglen + precdif + prefix) > 0
                    ? mods->wid - (arglen + precdif + prefix)
                    : 0;
-  int needed_capacity = arglen + precdif + widdif + prefix + 1;
-  buf.capacity = needed_capacity;
+  int needed_alloc = arglen + precdif + widdif + prefix + 1;
+  buf.alloc = needed_alloc;
   buf.size = precdif + arglen + prefix;
-  buf.array = malloc(needed_capacity);
+  buf.array = malloc(needed_alloc);
   char *bufcur = buf.array;
   is_error = !buf.array;
 
@@ -501,9 +501,9 @@ bool spec_xX(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_u(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+bool spec_u(char **scur, int *written, conv_t *mods, va_list *args) {
   bool is_error = false;
-  SizeChar_t buf = {0};
+  sc_t buf = {0};
 
   unsigned long arg = 0;
 
@@ -522,11 +522,11 @@ bool spec_u(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   int precdif = prec - arglen > 0 ? prec - arglen : 0;
   int widdif =
       mods->wid - (arglen + precdif) > 0 ? mods->wid - (arglen + precdif) : 0;
-  int needed_capacity = arglen + precdif + widdif + 1;
+  int needed_alloc = arglen + precdif + widdif + 1;
 
-  buf.capacity = needed_capacity;
+  buf.alloc = needed_alloc;
   buf.size = precdif + arglen;
-  buf.array = malloc(needed_capacity);
+  buf.array = malloc(needed_alloc);
   char *bufcur = buf.array;
   is_error = !buf.array;
 
@@ -568,7 +568,7 @@ bool spec_u(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_p(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+bool spec_p(char **scur, int *written, conv_t *mods, va_list *args) {
   uintptr_t arg = (uintptr_t)va_arg(*args, void *);
 
   bool is_error = false;
@@ -642,7 +642,7 @@ bool spec_p(char **scur, int *written, ConvMods_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_f(char **scur, int *written, ConvMods_t *mods, va_list *args) {
+bool spec_f(char **scur, int *written, conv_t *mods, va_list *args) {
   uint128_t bits = 0;
   int whole_part_len = 0;
   int sign = 0;
@@ -667,12 +667,12 @@ bool spec_f(char **scur, int *written, ConvMods_t *mods, va_list *args) {
     int arglen = whole_part_len + prec + dot + sign;
     int wid = mods->wid < 0 ? 0 : mods->wid;
     int widdif = wid - arglen < 0 ? 0 : wid - arglen;
-    int needed_capacity = arglen + widdif;
+    int needed_alloc = arglen + widdif;
 
-    SizeChar_t buf = {0};
+    sc_t buf = {0};
     buf.size = arglen;
-    buf.capacity = needed_capacity;
-    buf.array = malloc(needed_capacity);
+    buf.alloc = needed_alloc;
+    buf.array = malloc(needed_alloc);
     is_error = !buf.array;
 
     mods->len == 'L'
