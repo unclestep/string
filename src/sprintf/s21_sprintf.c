@@ -171,8 +171,8 @@ bool spec_c(char **scur, int *written, conv_t *mods, va_list *args) {
 
   sc_t buf = {0};
   buf.alloc = (MB_LEN_MAX + 1) * 3;
-  buf.array = malloc(buf.alloc);
-  bool is_error = !buf.array;
+  buf.d = malloc(buf.alloc);
+  bool is_error = !buf.d;
 
   if (!is_error) {
     if (mods->len == 'l') {
@@ -183,8 +183,8 @@ bool spec_c(char **scur, int *written, conv_t *mods, va_list *args) {
       is_error = wcrtostr(&buf, mods, wc, 2);
     } else {
       unsigned char arg = (unsigned char)va_arg(*args, int);
-      buf.array[0] = (unsigned char)arg;
-      buf.array[1] = '\0';
+      buf.d[0] = (unsigned char)arg;
+      buf.d[1] = '\0';
       buf.size = 1;
     }
   }
@@ -195,13 +195,13 @@ bool spec_c(char **scur, int *written, conv_t *mods, va_list *args) {
 
   if (!is_error) {
     for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
-      **scur = buf.array[i];
+      **scur = buf.d[i];
     }
     *written += buf.size;
   }
 
-  if (buf.array) {
-    free(buf.array);
+  if (buf.d) {
+    free(buf.d);
   }
 
   return is_error;
@@ -220,8 +220,8 @@ bool spec_s(char **scur, int *written, conv_t *mods, va_list *args) {
     szwnt += 1;
 
     buf.alloc = szwnt * MB_CUR_MAX * 3;
-    buf.array = malloc(buf.alloc);
-    is_error = !buf.array;
+    buf.d = malloc(buf.alloc);
+    is_error = !buf.d;
 
     if (!is_error) {
       is_error = wcrtostr(&buf, mods, wca, szwnt);
@@ -231,13 +231,13 @@ bool spec_s(char **scur, int *written, conv_t *mods, va_list *args) {
     szwnt = s21_strlen(ca) + 1;
 
     buf.alloc = szwnt * 3;
-    buf.array = malloc(buf.alloc);
-    is_error = !buf.array;
+    buf.d = malloc(buf.alloc);
+    is_error = !buf.d;
 
     if (!is_error) {
       for (s21_size_t i = 0; i < szwnt && (int)i != mods->prec; ++i) {
-        buf.array[i] = ca[i];
-        buf.size = buf.array[i] ? buf.size + 1 : buf.size;
+        buf.d[i] = ca[i];
+        buf.size = buf.d[i] ? buf.size + 1 : buf.size;
       }
     }
   }
@@ -248,13 +248,13 @@ bool spec_s(char **scur, int *written, conv_t *mods, va_list *args) {
 
   if (!is_error) {
     for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
-      **scur = buf.array[i];
+      **scur = buf.d[i];
     }
     *written += buf.size;
   }
 
-  if (buf.array) {
-    free(buf.array);
+  if (buf.d) {
+    free(buf.d);
   }
 
   return is_error;
@@ -287,9 +287,9 @@ bool spec_di(char **scur, int *written, conv_t *mods, va_list *args) {
 
   buf.alloc = needed_alloc;
   buf.size = precdif + sign + arglen;
-  buf.array = malloc(needed_alloc);
-  char *bufcur = buf.array;
-  is_error = !buf.array;
+  buf.d = malloc(needed_alloc);
+  char *bufcur = buf.d;
+  is_error = !buf.d;
 
   if (!is_error) {
     if (arg < 0) {
@@ -326,13 +326,13 @@ bool spec_di(char **scur, int *written, conv_t *mods, va_list *args) {
 
   if (!is_error) {
     for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
-      **scur = buf.array[i];
+      **scur = buf.d[i];
     }
     *written += buf.size;
   }
 
-  if (buf.array) {
-    free(buf.array);
+  if (buf.d) {
+    free(buf.d);
   }
 
   return is_error;
@@ -381,9 +381,9 @@ bool spec_o(char **scur, int *written, conv_t *mods, va_list *args) {
   int needed_alloc = arglen + precdif + widdif + 1;
   buf.alloc = needed_alloc;
   buf.size = precdif + arglen;
-  buf.array = malloc(needed_alloc);
-  char *bufcur = buf.array;
-  is_error = !buf.array;
+  buf.d = malloc(needed_alloc);
+  char *bufcur = buf.d;
+  is_error = !buf.d;
 
   if (!is_error) {
     for (int i = 0; i < precdif; ++i, ++bufcur) {
@@ -399,13 +399,13 @@ bool spec_o(char **scur, int *written, conv_t *mods, va_list *args) {
 
   if (!is_error) {
     for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
-      **scur = buf.array[i];
+      **scur = buf.d[i];
     }
     *written += buf.size;
   }
 
-  if (buf.array) {
-    free(buf.array);
+  if (buf.d) {
+    free(buf.d);
   }
 
   if (tmp) {
@@ -462,9 +462,9 @@ bool spec_xX(char **scur, int *written, conv_t *mods, va_list *args) {
   int needed_alloc = arglen + precdif + widdif + prefix + 1;
   buf.alloc = needed_alloc;
   buf.size = precdif + arglen + prefix;
-  buf.array = malloc(needed_alloc);
-  char *bufcur = buf.array;
-  is_error = !buf.array;
+  buf.d = malloc(needed_alloc);
+  char *bufcur = buf.d;
+  is_error = !buf.d;
 
   if (!is_error) {
     if (mods->hash && arg) {
@@ -485,13 +485,13 @@ bool spec_xX(char **scur, int *written, conv_t *mods, va_list *args) {
 
   if (!is_error) {
     for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
-      **scur = buf.array[i];
+      **scur = buf.d[i];
     }
     *written += buf.size;
   }
 
-  if (buf.array) {
-    free(buf.array);
+  if (buf.d) {
+    free(buf.d);
   }
 
   if (tmp) {
@@ -526,9 +526,9 @@ bool spec_u(char **scur, int *written, conv_t *mods, va_list *args) {
 
   buf.alloc = needed_alloc;
   buf.size = precdif + arglen;
-  buf.array = malloc(needed_alloc);
-  char *bufcur = buf.array;
-  is_error = !buf.array;
+  buf.d = malloc(needed_alloc);
+  char *bufcur = buf.d;
+  is_error = !buf.d;
 
   if (!is_error) {
     if (mods->prec < 0 && widdif && mods->zero) {
@@ -556,13 +556,13 @@ bool spec_u(char **scur, int *written, conv_t *mods, va_list *args) {
 
   if (!is_error) {
     for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
-      **scur = buf.array[i];
+      **scur = buf.d[i];
     }
     *written += buf.size;
   }
 
-  if (buf.array) {
-    free(buf.array);
+  if (buf.d) {
+    free(buf.d);
   }
 
   return is_error;
@@ -672,13 +672,13 @@ bool spec_f(char **scur, int *written, conv_t *mods, va_list *args) {
     sc_t buf = {0};
     buf.size = arglen;
     buf.alloc = needed_alloc;
-    buf.array = malloc(needed_alloc);
-    is_error = !buf.array;
+    buf.d = malloc(needed_alloc);
+    is_error = !buf.d;
 
     mods->len == 'L'
-        ? flttostr(buf.array, bits, LDOUBLE_MANTISSA_BITS,
-                   LDOUBLE_EXPONENT_BITS, true, whole_part_len + prec)
-        : flttostr(buf.array, bits, DOUBLE_MANTISSA_BITS, DOUBLE_EXPONENT_BITS,
+        ? flttostr(buf.d, bits, LDOUBLE_MANTISSA_BITS, LDOUBLE_EXPONENT_BITS,
+                   true, whole_part_len + prec)
+        : flttostr(buf.d, bits, DOUBLE_MANTISSA_BITS, DOUBLE_EXPONENT_BITS,
                    false, whole_part_len + prec);
   }
 

@@ -34,7 +34,7 @@ bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz) {
   mbstate_t state;
   s21_memset(&state, 0, sizeof(state));
 
-  char *mbcur = mb->array;
+  char *mbcur = mb->d;
 
   for (s21_size_t i = 0; !is_error && !prec_max && !nterm && i < wc_sz; ++i) {
     char mbbuf[MB_LEN_MAX + 1] = "\0";
@@ -60,42 +60,42 @@ bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz) {
   return is_error;
 }
 
-bool addwid(sc_t *array, conv_t *mods) {
+bool addwid(sc_t *arr, conv_t *mods) {
   char widfil = mods->zero ? '0' : ' ';
-  int widdif = mods->wid - array->size > 0 ? mods->wid - array->size : 0;
-  s21_size_t needed_alloc = array->size + widdif + 1;
+  int widdif = mods->wid - arr->size > 0 ? mods->wid - arr->size : 0;
+  s21_size_t needed_alloc = arr->size + widdif + 1;
   bool is_error = false;
 
   if (widdif > 0) {
-    if (needed_alloc > array->alloc) {
+    if (needed_alloc > arr->alloc) {
       char *buf = malloc(needed_alloc);
       is_error = !buf;
       if (buf && !mods->minus) {
         s21_memset(buf, widfil, widdif);
-        s21_memcpy(buf + widdif, array->array, array->size + 1);
+        s21_memcpy(buf + widdif, arr->d, arr->size + 1);
       } else if (buf && mods->minus) {
-        s21_memcpy(buf, array->array, array->size);
-        s21_memset(buf + array->size, widfil, widdif);
-        buf[array->size + widdif] = '\0';
+        s21_memcpy(buf, arr->d, arr->size);
+        s21_memset(buf + arr->size, widfil, widdif);
+        buf[arr->size + widdif] = '\0';
       }
 
       if (buf) {
-        free(array->array);
-        array->array = buf;
+        free(arr->d);
+        arr->d = buf;
       }
     } else {
       if (!mods->minus) {
-        for (int i = array->size; i >= 0; --i) {
-          array->array[i + widdif] = array->array[i];
+        for (int i = arr->size; i >= 0; --i) {
+          arr->d[i + widdif] = arr->d[i];
         }
-        s21_memset(array->array, widfil, widdif);
+        s21_memset(arr->d, widfil, widdif);
       } else {
-        s21_memset(array->array + array->size, widfil, widdif);
-        array->array[array->size + widdif] = '\0';
+        s21_memset(arr->d + arr->size, widfil, widdif);
+        arr->d[arr->size + widdif] = '\0';
       }
     }
 
-    array->size += widdif;
+    arr->size += widdif;
   }
 
   return is_error;

@@ -15,8 +15,8 @@
 #include "s21_std.h"
 
 /* Helpers */
-bool wcrtostr(sc_t *array, conv_t *mods, wchar_t *wc, s21_size_t wc_sz);
-bool addwid(sc_t *array, conv_t *mods);
+bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz);
+bool addwid(sc_t *arr, conv_t *mods);
 int intlen(long long i);
 int uintlen(unsigned long long i);
 void flttostr(char *res, const uint128_t bits, const uint32_t manbits,

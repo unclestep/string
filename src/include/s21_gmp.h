@@ -2,6 +2,8 @@
 #define S21_GMP_H
 
 #include <assert.h>
+#include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,7 +14,6 @@ typedef struct mpz_t {
   limb_t *d;       /* Pointer to the number */
   mp_size_t size;  /* Actual number of used limbs */
   mp_size_t alloc; /* Number of allocated limbs */
-  mp_size_t e10;   /* For scientific notation */
 } mpz_t;
 
 /* Arithmetic Functions */
@@ -25,18 +26,19 @@ static inline void mpz_init(mpz_t *val) {
   val->d = (limb_t *)calloc(1, sizeof(limb_t));
   val->size = 0;
   val->alloc = 1;
-  val->e10 = 0;
 }
 
 static inline void mpz_realloc(mpz_t *val, const mp_size_t new_alloc) {
-  limb_t *new_d = (limb_t *)realloc(val->d, new_alloc * sizeof(limb_t));
+  if (new_alloc > 0) {
+    limb_t *new_d = (limb_t *)realloc(val->d, new_alloc * sizeof(limb_t));
 
-  val->d = new_d;
-  if (new_alloc > val->alloc) {
-    s21_memset(val->d + val->alloc, 0,
-               (new_alloc - val->alloc) * sizeof(limb_t));
+    val->d = new_d;
+    if (new_alloc > val->alloc) {
+      s21_memset(val->d + val->alloc, 0,
+                 (new_alloc - val->alloc) * sizeof(limb_t));
+    }
+    val->alloc = new_alloc;
   }
-  val->alloc = new_alloc;
 }
 
 static inline void mpz_clear(mpz_t *val) {
@@ -45,10 +47,12 @@ static inline void mpz_clear(mpz_t *val) {
   }
   val->size = 0;
   val->alloc = 0;
-  val->e10 = 0;
 }
 
 static inline void mpz_set_ull(mpz_t *val, const unsigned long long d) {
+  if (val->size > 1) {
+    s21_memset(val->d + 1, 0, (val->size - 1) * sizeof(limb_t));
+  }
   val->d[0] = d;
   val->size = !d ? 0 : 1;
 }
@@ -59,8 +63,10 @@ static inline void mpz_set(mpz_t *dst, const mpz_t *src) {
   }
 
   s21_memcpy(dst->d, src->d, src->size * sizeof(limb_t));
+  if (dst->size > src->size) {
+    s21_memset(dst->d + src->size, 0, (dst->size - src->size) * sizeof(limb_t));
+  }
   dst->size = src->size;
-  dst->e10 = src->e10;
 }
 
 static inline void mpz_init_set_ull(mpz_t *val, const unsigned long long d) {
@@ -68,7 +74,6 @@ static inline void mpz_init_set_ull(mpz_t *val, const unsigned long long d) {
   val->d[0] = d;
   val->size = !d ? 0 : 1;
   val->alloc = 1;
-  val->e10 = 0;
 }
 
 static inline void mpz_init_set(mpz_t *dst, const mpz_t *src) {
@@ -76,7 +81,6 @@ static inline void mpz_init_set(mpz_t *dst, const mpz_t *src) {
   s21_memcpy(dst->d, src->d, src->alloc * sizeof(limb_t));
   dst->size = src->size;
   dst->alloc = src->alloc;
-  dst->e10 = src->e10;
 }
 
 /* Comparison Functions */
@@ -93,6 +97,9 @@ static inline int mpz_cmp(const mpz_t *val1, const mpz_t *val2) {
 
   return result;
 }
+
+/* Conversion Functions */
+static inline s21_size_t mpz_get_str(char *str, mpz_t *val);
 
 /* Logical and Bit Manipulation Functions */
 static inline unsigned mpz_getbit(const mpz_t *val, const mp_size_t ilimb,
@@ -111,8 +118,8 @@ static inline void mpz_setbit(mpz_t *val, const int ilimb, const int ibit,
 }
 
 /* Returns index of most significant bit in high word */
-static inline int mpz_msb(const mpz_t *val) {
-  limb_t hword = val->d[val->size - 1];
+static inline s21_size_t mpz_msb(const mpz_t *val) {
+  limb_t hword = val->size ? val->d[val->size - 1] : 0;
   int msb = -1;
 
   if (hword) {
@@ -140,15 +147,17 @@ static inline int mpz_msb(const mpz_t *val) {
   return msb;
 }
 
-static inline long long mpz_bitlen(const mpz_t *val) {
-  return !val->size
-             ? 0LL
-             : (long long)((val->size - 1) * LIMB_SIZE + mpz_msb(val) + 1);
+static inline s21_size_t mpz_bitlen(const mpz_t *val) {
+  return val->size
+             ? (s21_size_t)((val->size - 1) * LIMB_SIZE + mpz_msb(val) + 1)
+             : 0;
 }
 
 static inline void mpz_bitshiftr(mpz_t *res, const mpz_t *val,
                                  const mp_size_t shift) {
-  if (res != val) {
+  bool is_zero = !val->size;
+
+  if (!is_zero && res != val) {
     mpz_set(res, val);
   }
 
@@ -156,9 +165,7 @@ static inline void mpz_bitshiftr(mpz_t *res, const mpz_t *val,
   mp_size_t big_shift = shift / LIMB_SIZE;
   mp_size_t small_shift = shift % LIMB_SIZE;
 
-  bool is_zero = false;
-
-  if (big_shift >= res->size) {
+  if (!is_zero && big_shift >= res->size) {
     s21_memset(res->d, 0, res->size * sizeof(limb_t));
     res->size = 0;
     is_zero = true;
@@ -188,18 +195,21 @@ static inline void mpz_bitshiftr(mpz_t *res, const mpz_t *val,
 
 static inline void mpz_bitshiftl(mpz_t *res, const mpz_t *val,
                                  const mp_size_t shift) {
-  mp_size_t new_size = val->size + (mpz_msb(val) + 1 + shift) / LIMB_SIZE;
-  if (res->alloc < new_size) {
+  mp_size_t new_size =
+      val->size ? val->size + (mpz_msb(val) + 1 + shift) / LIMB_SIZE : 0;
+  bool is_zero = !new_size;
+
+  if (!is_zero && res->alloc < new_size) {
     mpz_realloc(res, new_size);
   }
-  if (res != val) {
+  if (!is_zero && res != val) {
     mpz_set(res, val);
   }
 
   mp_size_t big_shift = shift / LIMB_SIZE;
   mp_size_t small_shift = shift % LIMB_SIZE;
 
-  if (big_shift) {
+  if (!is_zero && big_shift) {
     for (mp_size_t cur_limb = res->size + big_shift; cur_limb != big_shift;
          --cur_limb) {
       res->d[cur_limb - 1] = res->d[cur_limb - 1 - big_shift];
@@ -207,7 +217,7 @@ static inline void mpz_bitshiftl(mpz_t *res, const mpz_t *val,
     s21_memset(res->d, 0, big_shift * sizeof(limb_t));
   }
 
-  if (small_shift) {
+  if (!is_zero && small_shift) {
     for (mp_size_t cur_limb = new_size; cur_limb != 0; --cur_limb) {
       res->d[cur_limb - 1] <<= small_shift;
       if (cur_limb > 1) {
@@ -233,6 +243,11 @@ static inline void mpz_and(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   for (res->size = le->size; res->size > 0 && !res->d[res->size - 1];
        --res->size) {
   }
+}
+
+/* Miscellaneous Functions */
+static inline s21_size_t mpz_sizeinbase10(const mpz_t *val) {
+  return (s21_size_t)(LOG10_2 * mpz_bitlen(val)) + 1;
 }
 
 /* Fast Arithmetic Functions */
@@ -267,8 +282,43 @@ static inline void mpz_idiv_2exp(mpz_t *quo, mpz_t *rem, const mpz_t *val,
 
 /* Returns fractional result of division: [fff.ffffff]
  * immediately converted to a string */
-static inline void mpz_fdiv_2exp(sc_t *res, const mpz_t *val, const int e,
-                                 const int decdigits) {}
+/*  NOTE: Use mpz_sizeinbase to properly allocate the memory for res */
+static inline void mpz_fdiv_2exp(char *res, const mpz_t *val, int exp,
+                                 s21_size_t decdigits) {
+  mpz_t quo, rem;
+  mpz_init(&quo), mpz_init(&rem);
+
+  mpz_idiv_2exp(&quo, &rem, val, exp);
+  long written = mpz_get_str(res, &quo);
+  long left = (long)decdigits - written;
+
+  if (left > 0) {
+    mpz_t divisor;
+    mpz_init_set_ull(&divisor, 1ULL);
+    mpz_bitshiftl(&divisor, &divisor, exp);
+
+    long whole_sz = written; /* Following digits are fractional */
+
+    for (; left > 0; --left) {
+      if (mpz_cmp(&rem, &divisor) == -1) {
+        mpz_mul10(&rem, &rem);
+        res[written++] = '0';
+      } else {
+        mpz_idiv_2exp(&quo, &rem, &rem, exp);
+        res[written++] = quo.d[0] + '0';
+      }
+    }
+    /*  TODO: Round-to-even (mb neea one more division) */
+    res[written] = '\0';
+
+    /* TODO: Function to reverse??? */
+    for (s21_size_t l = whole_sz, r = written - 1; l > r; ++l, --r) {
+      char tmp = res[l];
+      res[l] = res[r];
+      res[r] = tmp;
+    }
+  }
+}
 
 static inline void mpz_div10(mpz_t *quo, mpz_t *rem, const mpz_t *val) {
   mpz_t ten;
@@ -276,6 +326,26 @@ static inline void mpz_div10(mpz_t *quo, mpz_t *rem, const mpz_t *val) {
   mpz_div(quo, rem, val, &ten);
 }
 
-static inline void mpz_get_str(char *str, mpz_t *val) {}
+/*  TODO: Check string reverse algo (mb should to remove it) */
+static inline s21_size_t mpz_get_str(char *str, mpz_t *val) {
+  mpz_t quo, rem;
+  mpz_init(&quo), mpz_init(&rem);
+
+  int size = 0;
+
+  do {
+    mpz_div10(&quo, &rem, val);
+    str[size++] = rem.d[0] + '0';
+  } while (quo.size);
+
+  mpz_clear(&quo), mpz_clear(&rem);
+
+  str[size] = '\0';
+  for (s21_size_t l = 0, r = size - 1; l > r; ++l, --r) {
+    char tmp = str[l];
+    str[l] = str[r];
+    str[r] = tmp;
+  }
+}
 
 #endif

@@ -12,6 +12,8 @@ typedef __uint128_t uint128_t;
 #define ONE (uint128_t)1
 #define ZERO (uint128_t)0
 
+#define LOG10_2 0.30102999566
+
 /* s21_sprintf */
 #define LDOUBLE_MANTISSA_BITS 64
 #define LDOUBLE_EXPONENT_BITS 15
@@ -32,7 +34,7 @@ typedef struct conv_t {
 
 /* Size Char */
 typedef struct sc_t {
-  char *array;
+  char *d;
   s21_size_t size;
   s21_size_t alloc;
 } sc_t;

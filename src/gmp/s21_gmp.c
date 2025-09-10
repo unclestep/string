@@ -173,7 +173,7 @@ void mpz_div(mpz_t *quo, mpz_t *rem, const mpz_t *val1, const mpz_t *val2) {
     mpz_init_set(&minue, val1), mpz_init_set(&subtr, val2);
     mpz_realloc(&subtr, minue.size);
 
-    long long bitdif = mpz_bitlen(&minue) - mpz_bitlen(&subtr);
+    s21_size_t bitdif = mpz_bitlen(&minue) - mpz_bitlen(&subtr);
 
     mpz_bitshiftl(&subtr, &subtr, bitdif);
 
@@ -186,6 +186,7 @@ void mpz_div(mpz_t *quo, mpz_t *rem, const mpz_t *val1, const mpz_t *val2) {
       mpz_bitshiftr(&subtr, &subtr, 1);
     }
 
+    mpz_clear(&minue), mpz_clear(&subtr);
     mpz_set(rem, &minue);
   }
 }
