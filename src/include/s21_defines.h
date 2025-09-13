@@ -44,4 +44,16 @@ typedef struct sc_t {
 typedef unsigned long long limb_t;
 typedef int mp_size_t;
 
+typedef struct mpz_t {
+  limb_t *d;       /* Pointer to the number */
+  mp_size_t size;  /* Actual number of used limbs */
+  mp_size_t alloc; /* Number of allocated limbs */
+} mpz_t;
+
+typedef struct mpf_t {
+  mpz_t *man; /* Mantissa */
+  int exp;    /* Exponent */
+  int dec;    /* Number of significant decimals */
+} mpf_t;
+
 #endif

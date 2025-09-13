@@ -1,5 +1,6 @@
 #include "../include/s21_gmp.h"
 
+/* Arithmetic Functions */
 #ifdef USE_GCC_BUILTINS
 /* Better performance function based on gcc builtins */
 void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
@@ -173,7 +174,7 @@ void mpz_div(mpz_t *quo, mpz_t *rem, const mpz_t *val1, const mpz_t *val2) {
     mpz_init_set(&minue, val1), mpz_init_set(&subtr, val2);
     mpz_realloc(&subtr, minue.size);
 
-    s21_size_t bitdif = mpz_bitlen(&minue) - mpz_bitlen(&subtr);
+    s21_size_t bitdif = mpz_sizeinbase2(&minue) - mpz_sizeinbase2(&subtr);
 
     mpz_bitshiftl(&subtr, &subtr, bitdif);
 
@@ -189,4 +190,206 @@ void mpz_div(mpz_t *quo, mpz_t *rem, const mpz_t *val1, const mpz_t *val2) {
     mpz_clear(&minue), mpz_clear(&subtr);
     mpz_set(rem, &minue);
   }
+}
+
+/* NOTE: Always use in pair with mpz_rint to get correct output */
+/* This foo generates guard and sticky digits and always iterates p + 2 times */
+void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p) {
+  mpz_t quo, rem;
+  mpz_init(&quo), mpz_init(&rem);
+
+  mpz_idiv_2exp(res->man, &rem, val, exp);
+  res->dec = mpz_wholedigits(res->man);
+  res->exp = res->dec - 1;
+
+  bool is_signif = res->dec > 1;
+  bool was_divided = false;
+  p += 2; /* Get guard and sticky bits */
+
+  /* Only to get know if rem < divisor */
+  mpz_t divisor;
+  mpz_init_set_ull(&divisor, 1ULL);
+  mpz_bitshiftl(&divisor, &divisor, exp);
+
+  for (; p > 0; p -= is_signif) {
+    mpz_mul10(&rem, &rem);
+    mpz_mul10(res->man, res->man);
+
+    if (mpz_cmp(&rem, &divisor) == -1) {
+      was_divided = false;
+
+      res->exp -= !is_signif;
+      if (is_signif) ++res->dec;
+    } else {
+      was_divided = true;
+      is_signif = true;
+
+      mpz_idiv_2exp(&quo, &rem, &rem, exp);
+      mpz_add(res->man, res->man, &quo);
+      ++res->dec;
+    }
+  }
+
+  /* Somehow mark if the fraction is not ended */
+  /* This is the case when guard = [0, 9], sticky = 0, rem > 0 */
+  if (!was_divided) {
+    mpz_add_ull(res->man, res->man, 1); /* Will be rounded correctly */
+  }
+
+  mpz_clear(&quo), mpz_clear(&rem);
+}
+
+/* p - target figures after decimal point */
+/* For example, 0 - no fractional part, n - n digits after the decimal point */
+/* if p >= n, val won't be changed */
+void mpf_rint(mpf_t *val, int p) {
+  mpz_t rem;
+  mpz_init(&rem);
+
+  limb_t guard = 0;
+  bool sticky = false;
+
+  int fracdigits = val->dec - val->exp - 1;
+
+  for (; fracdigits > p; --fracdigits, --val->dec) {
+    mpz_div10(val->man, &rem, val->man);
+
+    if (fracdigits - p == 1) {
+      guard = rem.d[0];
+    } else if (rem.d[0]) {
+      sticky = true;
+    }
+  }
+
+  mpz_clear(&rem);
+
+  if (guard > 5 || (guard == 5 && (sticky || mpz_odd(val->man)))) {
+    mpz_add_ull(val->man, val->man, 1);
+  }
+}
+
+/* Comparison Functions */
+int mpz_cmp(const mpz_t *val1, const mpz_t *val2) {
+  int result = 0;
+
+  result = val1->size > val2->size ? 1 : -1;
+
+  if (!result) {
+    for (int cur_limb = val1->size - 1; !result && cur_limb >= 0; --cur_limb) {
+      result = val1->d[cur_limb] > val2->d[cur_limb] ? 1 : -1;
+    }
+  }
+
+  return result;
+}
+
+/* Logical, Bit and Bit Manipulation Functions */
+void mpz_bitshiftr(mpz_t *res, const mpz_t *val, mp_size_t shift) {
+  bool is_zero = !val->size;
+
+  if (!is_zero && res != val) {
+    mpz_set(res, val);
+  }
+
+  mp_size_t cur_limb = 0;
+  mp_size_t big_shift = shift / LIMB_SIZE;
+  mp_size_t small_shift = shift % LIMB_SIZE;
+
+  if (!is_zero && big_shift >= res->size) {
+    s21_memset(res->d, 0, res->size * sizeof(limb_t));
+    res->size = 0;
+    is_zero = true;
+  }
+
+  if (!is_zero && big_shift) {
+    for (; cur_limb != res->size - big_shift; ++cur_limb) {
+      res->d[cur_limb] = res->d[cur_limb + big_shift];
+    }
+    s21_memset(res->d + cur_limb, 0, (res->size - cur_limb) * sizeof(limb_t));
+    res->size -= big_shift;
+  }
+
+  if (!is_zero && small_shift) {
+    for (cur_limb = 0; cur_limb != res->size; ++cur_limb) {
+      res->d[cur_limb] >>= small_shift;
+      if (cur_limb + 1 < res->size) {
+        limb_t carry = res->d[cur_limb + 1] & (((limb_t)1 << small_shift) - 1);
+        res->d[cur_limb] |= carry << (LIMB_SIZE - small_shift);
+      }
+    }
+
+    for (; res->size != 0 && !res->d[res->size - 1]; --res->size) {
+    }
+  }
+}
+
+void mpz_bitshiftl(mpz_t *res, const mpz_t *val, mp_size_t shift) {
+  mp_size_t new_size =
+      val->size ? val->size + (mpz_msb(val) + 1 + shift) / LIMB_SIZE : 0;
+  bool is_zero = !new_size;
+
+  if (!is_zero && res->alloc < new_size) {
+    mpz_realloc(res, new_size);
+  }
+  if (!is_zero && res != val) {
+    mpz_set(res, val);
+  }
+
+  mp_size_t big_shift = shift / LIMB_SIZE;
+  mp_size_t small_shift = shift % LIMB_SIZE;
+
+  if (!is_zero && big_shift) {
+    for (mp_size_t cur_limb = res->size + big_shift; cur_limb != big_shift;
+         --cur_limb) {
+      res->d[cur_limb - 1] = res->d[cur_limb - 1 - big_shift];
+    }
+    s21_memset(res->d, 0, big_shift * sizeof(limb_t));
+  }
+
+  if (!is_zero && small_shift) {
+    for (mp_size_t cur_limb = new_size; cur_limb != 0; --cur_limb) {
+      res->d[cur_limb - 1] <<= small_shift;
+      if (cur_limb > 1) {
+        limb_t carry = res->d[cur_limb - 2] >> (LIMB_SIZE - small_shift);
+        res->d[cur_limb - 1] |= carry;
+      }
+    }
+  }
+
+  res->size = new_size;
+}
+
+/* Conversion Functions */
+/* NOTE: Use mpz_sizeinbase10 to properly allocate the memory for the string */
+s21_size_t mpz_to_fltnot(char *str, const mpz_t *val) {
+  mpz_t quo, rem;
+  mpz_init(&quo), mpz_init(&rem);
+
+  long size = 0;
+
+  do {
+    mpz_div10(&quo, &rem, val);
+    str[size] = rem.d[0] + '0';
+    size = quo.size ? size + 1 : size;
+  } while (quo.size);
+
+  mpz_clear(&quo), mpz_clear(&rem);
+  str[size] = '\0';
+
+  for (long l = 0, r = size - 1; l > r; ++l, --r) {
+    char tmp = str[l];
+    str[l] = str[r];
+    str[r] = tmp;
+  }
+
+  return size;
+}
+
+/* NOTE: Use mpz_sizeinbase10 to properly allocate the memory for the string */
+s21_size_t mpz_to_scinot(char *str, const mpz_t *val) {}
+
+void mpz_to_mpf(mpf_t *dst, mpz_t *src) {
+  dst->man = src;
+  dst->dec = mpz_wholedigits(src, s21_NULL);
+  dst->exp = dst->dec - 1;
 }
