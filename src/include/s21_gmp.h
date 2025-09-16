@@ -242,17 +242,20 @@ static inline s21_size_t mpz_sizeinbase10(const mpz_t *val) {
 
 /* The result will be always exact but the function is performance demanding */
 static inline s21_size_t mpz_exactsizeinbase10(const mpz_t *val) {
-  mpz_t quo, rem;
-  mpz_init_set(&quo, val), mpz_init(&rem);
+  mpz_t checker;
+  mpz_init_set_ull(&checker, 1);
 
-  int size = 0;
+  s21_size_t size = mpz_sizeinbase10(val); /* For now this is inexact */
 
-  do {
-    mpz_div10(&quo, &rem, &quo);
-    size = quo.size ? size + 1 : size;
-  } while (quo.size);
+  for (s21_size_t i = size; i > 0; --i) {
+    mpz_mul10(&checker, &checker);
+  }
 
-  mpz_clear(&quo), mpz_clear(&rem);
+  if (mpz_cmp(&checker, val) == 1) {
+    size -= 1; /* And now this is exact */
+  }
+
+  mpz_clear(&checker);
 
   return size;
 }
