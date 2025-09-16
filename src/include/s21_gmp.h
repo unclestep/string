@@ -148,6 +148,14 @@ static inline void mpz_and(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   }
 }
 
+/* Comparison Functions */
+int mpz_cmp(const mpz_t *val1, const mpz_t *val2);
+
+/* Conversion Functions */
+void mpf_to_fltnot(char *dst, mpf_t *src, int p);
+void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e);
+void mpz_to_mpf(mpf_t *dst, mpz_t *src);
+
 /* Arithmetic Functions */
 void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2);
 void mpz_sub(mpz_t *res, const mpz_t *val1, const mpz_t *val2);
@@ -216,14 +224,9 @@ static inline void mpz_idiv_2exp(mpz_t *quo, mpz_t *rem, const mpz_t *val,
 }
 
 void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p);
+
+/* Rounding Functions */
 void mpf_rint(mpf_t *val, int p);
-
-/* Comparison Functions */
-int mpz_cmp(const mpz_t *val1, const mpz_t *val2);
-
-/* Conversion Functions */
-s21_size_t mpz_to_fltnot(char *str, const mpz_t *val);
-s21_size_t mpz_to_scinot(char *str, const mpz_t *val);
 
 /* Miscellaneous Functions */
 static inline s21_size_t mpz_sizeinbase2(const mpz_t *val) {
@@ -237,7 +240,7 @@ static inline s21_size_t mpz_sizeinbase10(const mpz_t *val) {
   return (s21_size_t)(LOG10_2 * mpz_sizeinbase2(val)) + 1;
 }
 
-/* The result will be always exact but the calc is performance demanding */
+/* The result will be always exact but the function is performance demanding */
 static inline s21_size_t mpz_exactsizeinbase10(const mpz_t *val) {
   mpz_t quo, rem;
   mpz_init_set(&quo, val), mpz_init(&rem);

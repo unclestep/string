@@ -375,7 +375,7 @@ void mpf_to_fltnot(char *dst, mpf_t *src, int p) {
   dst[len] = '\0';
   int cur = len - 1;
 
-  int fracs = src->exp >= 0 ? src->fig - exp - 1 : src->fig - 1;
+  int fracs = src->exp >= 0 ? src->fig - src->exp - 1 : src->fig - 1;
   int pdif = p > fracs ? p - fracs : 0;
 
   for (; pdif != 0; --pdif) {
