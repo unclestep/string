@@ -667,7 +667,7 @@ bool spec_f(char **scur, int *written, conv_t *mods, va_list *args) {
     int arglen = whole_part_len + prec + dot + sign;
     int wid = mods->wid < 0 ? 0 : mods->wid;
     int widdif = wid - arglen < 0 ? 0 : wid - arglen;
-    int needed_alloc = arglen + widdif;
+    int needed_alloc = arglen + widdif + 1;
 
     sc_t buf = {0};
     buf.size = arglen;
@@ -675,19 +675,18 @@ bool spec_f(char **scur, int *written, conv_t *mods, va_list *args) {
     buf.d = malloc(needed_alloc);
     is_error = !buf.d;
 
-    mods->len == 'L'
-        ? flttostr(buf.d, bits, LDOUBLE_MANTISSA_BITS, LDOUBLE_EXPONENT_BITS,
-                   true, whole_part_len + prec)
-        : flttostr(buf.d, bits, DOUBLE_MANTISSA_BITS, DOUBLE_EXPONENT_BITS,
-                   false, whole_part_len + prec);
+    mods->len == 'L' ? flttostr(buf.d, bits, LDOUBLE_MANTISSA_BITS,
+                                LDOUBLE_EXPONENT_BITS, true, mods)
+                     : flttostr(buf.d, bits, DOUBLE_MANTISSA_BITS,
+                                DOUBLE_EXPONENT_BITS, false, mods);
   }
 
   return is_error;
 }
 
-void flttostr(char *res, const uint128_t bits, const uint32_t manbits,
+void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
               const uint32_t expbits, const bool explicit_leading_bit,
-              const int decdigits) {
+              conv_t *mods) {
   const uint32_t bias = (1U << (expbits - 1)) - 1;
   const bool ieee_sign = (bits >> (manbits + expbits)) & 1U;
   const uint128_t ieee_man = bits & ((ONE << manbits) - 1);
@@ -696,16 +695,16 @@ void flttostr(char *res, const uint128_t bits, const uint32_t manbits,
   bool zero_inf_nan = false;
 
   if (ieee_exp == 0 && ieee_man == 0) {
-    *res++ = '0';
+    *dst++ = '0';
     zero_inf_nan = true;
   } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man == 0) {
-    for (const char *inf = "infinity"; *inf; ++res, ++inf) {
-      *res = *inf;
+    for (const char *inf = "infinity"; *inf; ++dst, ++inf) {
+      *dst = *inf;
     }
     zero_inf_nan = true;
   } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man != 0) {
-    for (const char *nan = "nan"; *nan; ++res, ++nan) {
-      *res = *nan;
+    for (const char *nan = "nan"; *nan; ++dst, ++nan) {
+      *dst = *nan;
     }
     zero_inf_nan = true;
   }
@@ -721,33 +720,35 @@ void flttostr(char *res, const uint128_t bits, const uint32_t manbits,
       m = ieee_man;
     } else {
       e = ieee_exp == 0 ? 1 - bias - manbits : ieee_exp - bias - manbits;
-      m = (ONE << manbits) | ieee_man;
+      m = (1ULL << manbits) | ieee_man;
     }
 
-    BigNum_t v = {0};
+    mpf_t mpres;
+    mpz_t mpman;
+    mpf_init(&mpres), mpz_init_set_ull(&mpman, m);
+
+    int prec = mods->prec < 0 ? 6 : mods->prec;
+    if (!prec && mods->spec == 'g') prec = 1;
 
     /* Bitwise left shift by e (multiplication) */
     if (e >= 0) {
-      int32_t m_limbs = 1;
-      int32_t e_limbs = ceil(e / (float)LIMB_SIZE);
-
-      v.msb = e;
-      v.limbs = m_limbs + e_limbs;
-      v.num = (limb_t *)calloc(v.limbs, LIMB_SIZE);
-      v.e10 = 0;
-
-      mul_2exp(&v, m, e);
+      mpz_mul_2exp(&mpres, &mpman, e);
     } else { /* Bitwise right shift by e until needed precision is reached
                 (fractional division) */
       e = -e;
+      mpz_fdiv_2exp(&mpres, &mpman, e, prec);
+    }
 
-      v.msb = -1;
-      v.limbs = ceil((float)(decdigits * ceil(log2(10))) / LIMB_SIZE);
-      v.num = (limb_t *)calloc(v.limbs, LIMB_SIZE);
-
-      fdiv_2exp(res, &v, e, decdigits);
+    if (mods->spec == 'f') {
+      mpf_to_fltnot(dst, &mpres, prec);
+    } else if (mods->spec == 'e' || mods->spec == 'E') {
+      mpf_to_scinot(dst, &mpres, prec, mods->spec == 'E');
+    } else if (mods->spec == 'g' || mods->spec == 'G') {
+      if (prec > mpres.exp && mpres.exp >= -4) {
+        mpf_to_fltnot(dst, &mpres, prec - 1 - mpres.exp);
+      } else {
+        mpf_to_scinot(dst, &mpres, prec - 1, mods->spec == 'G');
+      }
     }
   }
 }
-
-void div2(BigNum_t *v, const uint128_t m, const int32_t e) {}

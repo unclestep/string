@@ -10,7 +10,7 @@
 #include "s21_defines.h"
 #include "s21_std.h"
 
-/* Initialization and Assignment Functions */
+/* MPZ Initialization and Assignment Functions */
 static inline void mpz_init(mpz_t *val) {
   val->d = (limb_t *)calloc(1, sizeof(limb_t));
   val->size = 0;
@@ -70,6 +70,19 @@ static inline void mpz_init_set(mpz_t *dst, const mpz_t *src) {
   s21_memcpy(dst->d, src->d, src->alloc * sizeof(limb_t));
   dst->size = src->size;
   dst->alloc = src->alloc;
+}
+
+/* MPF Initialization Functions */
+static inline void mpf_init(mpf_t *val) {
+  mpz_init(val->man);
+  val->exp = 0;
+  val->fig = 0;
+}
+
+static inline void mpf_clear(mpf_t *val) {
+  mpz_clear(val->man);
+  val->exp = 0;
+  val->fig = 0;
 }
 
 /* Logical, Bit and Bit Manipulation Functions */
@@ -174,8 +187,14 @@ static inline void mpz_mul10(mpz_t *res, const mpz_t *val) {
   mpz_clear(&add1), mpz_clear(&add2);
 }
 
-static inline void mpz_mul_2exp(mpz_t *res, const mpz_t *val, int exp) {
-  mpz_bitshiftl(res, val, exp);
+static inline void mpz_mul_2exp(mpf_t *res, const mpz_t *val, int exp) {
+  mpz_t tmp;
+  mpz_init(&tmp);
+
+  mpz_bitshiftl(&tmp, val, exp);
+  mpz_to_mpf(res, &tmp);
+
+  mpz_clear(&tmp);
 }
 
 static inline void mpz_div10(mpz_t *quo, mpz_t *rem, const mpz_t *val) {
@@ -212,33 +231,25 @@ static inline s21_size_t mpz_sizeinbase2(const mpz_t *val) {
              ? (s21_size_t)((val->size - 1) * LIMB_SIZE + mpz_msb(val) + 1)
              : 0;
 }
+
+/* The result will be exact or 1 too big */
 static inline s21_size_t mpz_sizeinbase10(const mpz_t *val) {
   return (s21_size_t)(LOG10_2 * mpz_sizeinbase2(val)) + 1;
 }
 
-/* NOTE: if digits is passed, will convert mpz digits to str */
-static inline s21_size_t mpz_wholedigits(const mpz_t *val, char *digits) {
+/* The result will be always exact but the calc is performance demanding */
+static inline s21_size_t mpz_exactsizeinbase10(const mpz_t *val) {
   mpz_t quo, rem;
-  mpz_init(&quo), mpz_init(&rem);
+  mpz_init_set(&quo, val), mpz_init(&rem);
 
   int size = 0;
 
   do {
-    mpz_div10(&quo, &rem, val);
-    if (digits) digits[size] = rem.d[0] + '0';
+    mpz_div10(&quo, &rem, &quo);
     size = quo.size ? size + 1 : size;
   } while (quo.size);
 
-  if (digits) digits[size] = '\0';
   mpz_clear(&quo), mpz_clear(&rem);
-
-  if (digits) {
-    for (long l = 0, r = size - 1; l > r; ++l, --r) {
-      char tmp = digits[l];
-      digits[l] = digits[r];
-      digits[r] = tmp;
-    }
-  }
 
   return size;
 }

@@ -199,34 +199,31 @@ void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p) {
   mpz_init(&quo), mpz_init(&rem);
 
   mpz_idiv_2exp(res->man, &rem, val, exp);
-  res->dec = mpz_wholedigits(res->man);
-  res->exp = res->dec - 1;
+  res->fig = mpz_exactsizeinbase10(res->man);
+  res->exp = res->fig - 1;
 
-  bool is_signif = res->dec > 1;
+  bool is_signif = res->fig > 0;
   bool was_divided = false;
   p += 2; /* Get guard and sticky bits */
 
   /* Only to get know if rem < divisor */
   mpz_t divisor;
-  mpz_init_set_ull(&divisor, 1ULL);
+  mpz_init_set_ull(&divisor, 1);
   mpz_bitshiftl(&divisor, &divisor, exp);
 
-  for (; p > 0; p -= is_signif) {
+  for (; p > 0; p -= is_signif, ++res->fig) {
     mpz_mul10(&rem, &rem);
     mpz_mul10(res->man, res->man);
 
     if (mpz_cmp(&rem, &divisor) == -1) {
       was_divided = false;
-
       res->exp -= !is_signif;
-      if (is_signif) ++res->dec;
     } else {
       was_divided = true;
       is_signif = true;
 
       mpz_idiv_2exp(&quo, &rem, &rem, exp);
       mpz_add(res->man, res->man, &quo);
-      ++res->dec;
     }
   }
 
@@ -239,9 +236,17 @@ void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p) {
   mpz_clear(&quo), mpz_clear(&rem);
 }
 
-/* p - target figures after decimal point */
-/* For example, 0 - no fractional part, n - n digits after the decimal point */
-/* if p >= n, val won't be changed */
+/* p - target figures that the value should have */
+/* For example, val = 1.23456e+05 (123456), p = 3, final = 1.23e+05 (123000) */
+/* For example, val = 1.23456e+02 (123.456), p = 3, final = 1.23e+02 (123) */
+/* For example, val = 5.23e-03 (0.00523), p = 4, final = 5e-03 (0.005) */
+/* For example, val = 5.23e-03 (0.00523), p = 0, final = 0e+00 (0) */
+/* If you're operating with standard notation and want to round the num */
+/* Like this: 123.456789 (1.23456789e+02) -> 123.46 (1.23460000e+02) */
+/* Use the following formula for p: */
+/* val->exp >= 0: val->exp + 1 + desirable_after_dot_precision */
+/* val->exp < 0: desirable_after_dot_precision */
+/* NOTE: Any other function must handle the case when p > val's figures */
 void mpf_rint(mpf_t *val, int p) {
   mpz_t rem;
   mpz_init(&rem);
@@ -249,12 +254,10 @@ void mpf_rint(mpf_t *val, int p) {
   limb_t guard = 0;
   bool sticky = false;
 
-  int fracdigits = val->dec - val->exp - 1;
-
-  for (; fracdigits > p; --fracdigits, --val->dec) {
+  for (; val->fig > p; --val->fig) {
     mpz_div10(val->man, &rem, val->man);
 
-    if (fracdigits - p == 1) {
+    if (val->fig - p == 1) {
       guard = rem.d[0];
     } else if (rem.d[0]) {
       sticky = true;
@@ -361,35 +364,86 @@ void mpz_bitshiftl(mpz_t *res, const mpz_t *val, mp_size_t shift) {
 
 /* Conversion Functions */
 /* NOTE: Use mpz_sizeinbase10 to properly allocate the memory for the string */
-s21_size_t mpz_to_fltnot(char *str, const mpz_t *val) {
-  mpz_t quo, rem;
-  mpz_init(&quo), mpz_init(&rem);
+void mpf_to_fltnot(char *dst, mpf_t *src, int p) {
+  int wholes = src->exp >= 0 ? src->exp + 1 : 0;
 
-  long size = 0;
+  mpf_rint(src, wholes + p);
 
-  do {
-    mpz_div10(&quo, &rem, val);
-    str[size] = rem.d[0] + '0';
-    size = quo.size ? size + 1 : size;
-  } while (quo.size);
+  /* wholes[wholes] + dot[1] + prec[prec] */
+  int len = wholes + p + 1;
 
-  mpz_clear(&quo), mpz_clear(&rem);
-  str[size] = '\0';
+  dst[len] = '\0';
+  int cur = len - 1;
 
-  for (long l = 0, r = size - 1; l > r; ++l, --r) {
-    char tmp = str[l];
-    str[l] = str[r];
-    str[r] = tmp;
+  int fracs = src->exp >= 0 ? src->fig - exp - 1 : src->fig - 1;
+  int pdif = p > fracs ? p - fracs : 0;
+
+  for (; pdif != 0; --pdif) {
+    dst[cur--] = '0';
   }
 
-  return size;
+  mpz_t quo, rem;
+  mpz_init_set(&quo, src->man), mpz_init(&rem);
+
+  for (int fig = src->fig; fig > 0; --fig) {
+    if (fig == wholes) {
+      dst[cur--] = '.';
+    }
+    mpz_div10(&quo, &rem, &quo);
+    dst[cur--] = rem.d[0] + '0';
+  }
+
+  mpz_clear(&quo), mpz_clear(&rem);
 }
 
 /* NOTE: Use mpz_sizeinbase10 to properly allocate the memory for the string */
-s21_size_t mpz_to_scinot(char *str, const mpz_t *val) {}
+/* NOTE: Argument p accepts the fractional precision */
+void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
+  mpf_rint(src, p + 1);
+
+  /* whole[1] + dot[1] + prec[p] + e[1] + e_sign[1] + e_len[up to 3] */
+  char e = big_e ? 'E' : 'e';
+  char e_sign = src->exp >= 0 ? '+' : '-';
+  int e_len = abs(src->exp) < 100 ? 2 : 3;
+  int e_val = abs(src->exp);
+
+  int len = p + 4 + e_val;
+
+  dst[len] = '\0';
+  int cur = len - 1;
+
+  for (; cur >= len - e_len;) {
+    dst[cur--] = e_val % 10 + '0';
+    e_val /= 10;
+  }
+
+  dst[cur--] = e_sign;
+  dst[cur--] = e;
+
+  int fracs = src->exp >= 0 ? src->fig - 1 : src->fig + src->exp - 1;
+  int pdif = p > fracs ? p - fracs : 0;
+
+  for (; pdif != 0; --pdif) {
+    dst[cur--] = '0';
+  }
+
+  mpz_t quo, rem;
+  mpz_init_set(&quo, src->man), mpz_init(&rem);
+
+  for (int fig = src->fig; fig > 1; --fig) {
+    mpz_div10(&quo, &rem, &quo);
+    dst[cur--] = rem.d[0] + '0';
+  }
+
+  dst[cur--] = '.';
+  mpz_div10(&quo, &rem, &quo);
+  dst[cur] = rem.d[0] = '0';
+
+  mpz_clear(&quo), mpz_clear(&rem);
+}
 
 void mpz_to_mpf(mpf_t *dst, mpz_t *src) {
-  dst->man = src;
-  dst->dec = mpz_wholedigits(src, s21_NULL);
-  dst->exp = dst->dec - 1;
+  mpz_set(dst->man, src);
+  dst->fig = mpz_exactsizeinbase10(src);
+  dst->exp = dst->fig - 1;
 }

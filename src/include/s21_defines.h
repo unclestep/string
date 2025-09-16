@@ -53,7 +53,7 @@ typedef struct mpz_t {
 typedef struct mpf_t {
   mpz_t *man; /* Mantissa */
   int exp;    /* Exponent */
-  int dec;    /* Number of significant decimals */
+  int fig;    /* Figures of number */
 } mpf_t;
 
 #endif

@@ -19,9 +19,9 @@ bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz);
 bool addwid(sc_t *arr, conv_t *mods);
 int intlen(long long i);
 int uintlen(unsigned long long i);
-void flttostr(char *res, const uint128_t bits, const uint32_t manbits,
+void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
               const uint32_t expbits, const bool explicit_leading_bit,
-              const int decdigits);
+              conv_t *mods);
 
 /* Main Functions */
 int s21_sprintf(char *str, const char *format, ...);
