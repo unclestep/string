@@ -3,6 +3,7 @@
 
 #include "../s21_string.h"
 #include "include/s21_bonus_test.h"
+#include "include/s21_gmp_test.h"
 #include "include/s21_sprintf_test.h"
 #include "include/s21_sscanf_test.h"
 #include "include/s21_std_test.h"

@@ -6,6 +6,9 @@
 #include <string.h>
 #include <unistd.h>
 
-Suite *suite_s21_sprintf_test();
+#include "../../include/s21_sprintf.h"
+#include "../../include/s21_std.h"
+
+Suite *suite_s21_sprintf_test(void);
 
 #endif

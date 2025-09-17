@@ -1,4 +1,4 @@
-#include "../s21_test.h"
+#include "../include/s21_std_test.h"
 
 START_TEST(s21_memchr_good_find) {
   const char str[] = "123456789";

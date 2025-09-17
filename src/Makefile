@@ -1,4 +1,5 @@
 CFLAGS = -Wall -Werror -Wextra -std=c11 -g -O0
+CFLAGS += $(SPECIAL)
 CC = gcc
 LIBS = -lcheck
 ifeq ($(shell uname), Linux)
@@ -14,12 +15,14 @@ STD = std
 SPRINTF = sprintf
 SSCANF =  sscanf
 BONUS = bonus
+GMP = gmp
 TEST = test
 
 SRCS = $(wildcard $(STD)/*.c) \
        $(wildcard $(SPRINTF)/*.c) \
        $(wildcard $(SSCANF)/*.c) \
-       $(wildcard $(BONUS)/*.c)
+       $(wildcard $(BONUS)/*.c) \
+       $(wildcard $(GMP)/*.c)
 OBJS = $(patsubst %.c, $(BUILD_DIR)/%.o, $(SRCS))
 
 TEST_SRCS = $(wildcard $(TEST)/*/*.c) \

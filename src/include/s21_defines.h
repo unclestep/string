@@ -1,7 +1,7 @@
 #ifndef S21_STRING_DEFINES_H
 #define S21_STRING_DEFINES_H
 
-#include <stdint.h>
+#include <stdbool.h>
 
 /* Common */
 typedef unsigned long s21_size_t;

@@ -1,4 +1,4 @@
-#include "../s21_string.h"
+#include "../include/s21_std.h"
 
 char *s21_strrchr(const char *str, int c) {
   const unsigned char *cur = (const unsigned char *)str;

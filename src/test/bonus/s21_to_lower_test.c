@@ -1,4 +1,4 @@
-#include "../s21_test.h"
+#include "../include/s21_bonus_test.h"
 
 START_TEST(s21_to_lower_nullptr) {
   ck_assert_ptr_eq(s21_to_lower(s21_NULL), s21_NULL);

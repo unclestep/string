@@ -3,8 +3,6 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "s21_defines.h"
@@ -97,14 +95,18 @@ static inline unsigned mpz_getbit(const mpz_t *val, mp_size_t ilimb,
 }
 
 static inline void mpz_setbit(mpz_t *val, int ilimb, int ibit, limb_t setbit) {
-  assert(ilimb >= 0 && ilimb < val->alloc);
+  assert(ilimb >= 0);
   assert(ibit >= 0 && ibit < LIMB_SIZE);
+
+  if (ilimb >= val->alloc) mpz_realloc(val, ilimb + 1);
+  if (ilimb >= val->size && setbit) val->size = ilimb + 1;
+
   val->d[ilimb] &= ~((limb_t)1U << ibit);
   val->d[ilimb] |= setbit << ibit;
 }
 
 /* Returns index of most significant bit in high word */
-static inline s21_size_t mpz_msb(const mpz_t *val) {
+static inline int mpz_msb(const mpz_t *val) {
   limb_t hword = val->size ? val->d[val->size - 1] : 0;
   int msb = -1;
 
@@ -112,21 +114,30 @@ static inline s21_size_t mpz_msb(const mpz_t *val) {
 #ifdef USE_GCC_BUILTINS
     msb = LIMB_SIZE - __builtin_clzll(hword) - 1;
 #else
-    /* De Bruijn Table */
-    static const int BitPosLookup[64] = {
-        0,  1,  2,  53, 3,  7,  54, 27, 4,  38, 41, 8,  34, 55, 48, 28,
-        62, 5,  39, 46, 44, 42, 22, 9,  24, 35, 59, 56, 49, 18, 29, 11,
-        63, 52, 6,  26, 37, 40, 33, 47, 61, 45, 43, 21, 23, 58, 17, 10,
-        51, 25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12};
-
-    hword |= hword >> 1;
-    hword |= hword >> 2;
-    hword |= hword >> 4;
-    hword |= hword >> 8;
-    hword |= hword >> 16;
-    hword |= hword >> 32;
-
-    msb = BitPosLookup[((limb_t)(hword * 0x022FDD63CC95386DUL)) >> 58];
+    msb = 0;
+    if (hword >= 1UL << 32) {
+      msb += 32;
+      hword >>= 32;
+    }
+    if (hword >= 1UL << 16) {
+      msb += 16;
+      hword >>= 16;
+    }
+    if (hword >= 1UL << 8) {
+      msb += 8;
+      hword >>= 8;
+    }
+    if (hword >= 1UL << 4) {
+      msb += 4;
+      hword >>= 4;
+    }
+    if (hword >= 1UL << 2) {
+      msb += 2;
+      hword >>= 2;
+    }
+    if (hword >= 1UL << 1) {
+      msb += 1;
+    }
 #endif
   }
 

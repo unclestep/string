@@ -1,4 +1,4 @@
-#include "../s21_string.h"
+#include "../include/s21_std.h"
 
 char *s21_strncpy(char *dest, const char *src, s21_size_t n) {
   char *dcur = dest;

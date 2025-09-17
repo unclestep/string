@@ -1,4 +1,4 @@
-#include "../s21_string.h"
+#include "../include/s21_std.h"
 
 int s21_strncmp(const char *str1, const char *str2, s21_size_t n) {
   const unsigned char *cur1 = (const unsigned char *)str1;

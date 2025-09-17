@@ -1,4 +1,4 @@
-#include "../s21_test.h"
+#include "../include/s21_bonus_test.h"
 
 START_TEST(s21_insert_src_empty) {
   const char *src = "\0";

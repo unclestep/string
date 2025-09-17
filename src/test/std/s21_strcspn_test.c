@@ -1,4 +1,4 @@
-#include "../s21_test.h"
+#include "../include/s21_std_test.h"
 
 START_TEST(s21_strcspn_forbid_end) {
   const char *str1 = "abcdef$#*";

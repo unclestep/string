@@ -5,7 +5,6 @@
 #include <locale.h>
 #include <math.h>
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <wchar.h>
@@ -25,7 +24,7 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
 
 /* Main Functions */
 int s21_sprintf(char *str, const char *format, ...);
-bool datatostr(char **scur, const char **fcur, int *written, va_list *args);
+bool tostr(char **scur, const char **fcur, int *written, va_list *args);
 bool get_convmods(const char **fcur, conv_t *mods, va_list *args);
 void adjust_convmods(conv_t *mods);
 bool convert(char **scur, int *written, conv_t *mods, va_list *args);

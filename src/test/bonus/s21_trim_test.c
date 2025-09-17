@@ -1,4 +1,4 @@
-#include "../s21_test.h"
+#include "../include/s21_bonus_test.h"
 
 START_TEST(s21_trim_null) {
   const char *src = NULL;

@@ -1,5 +1,7 @@
 #include "../include/s21_gmp.h"
 
+#include <stdio.h>
+
 /* Arithmetic Functions */
 #ifdef USE_GCC_BUILTINS
 /* Better performance function based on gcc builtins */
@@ -9,10 +11,13 @@ void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   mpz_init_set(&op1, val1), mpz_init_set(&op2, val2);
 
   mpz_t *gr, *le;
-  mpz_compare(&op1, &op2) >= 0 ? (gr = &op1, le = &op2)
-                               : (gr = &op2, le = &op1);
+  mpz_cmp(&op1, &op2) >= 0 ? (gr = &op1, le = &op2) : (gr = &op2, le = &op1);
 
-  mpz_realloc(res, gr->size + 1);
+  if (op1.size == op2.size && mpz_msb(gr) == 63 && mpz_msb(le) == 63) {
+    mpz_realloc(res, gr->size + 1);
+  } else {
+    mpz_realloc(res, gr->size);
+  }
 
   limb_t carry = 0;
   mp_size_t cur_limb = 0;
@@ -41,9 +46,13 @@ void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   mpz_init_set(&op1, val1), mpz_init_set(&op2, val2);
 
   mpz_t *gr, *le;
-  mpz_cmp(&op1, &op2) >= 0 ? (gr = &op1, le = &op2) : (gr = &op2, le = &op1);
+  op1.size >= op2.size ? (gr = &op1, le = &op2) : (gr = &op2, le = &op1);
 
-  mpz_realloc(res, gr->size + 1);
+  if (op1.size == op2.size && mpz_msb(gr) == 63 && mpz_msb(le) == 63) {
+    mpz_realloc(res, gr->size + 1);
+  } else {
+    mpz_realloc(res, gr->size);
+  }
 
   unsigned carry = 0;
   mp_size_t cur_limb = 0;
@@ -140,7 +149,7 @@ void mpz_sub(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
        * (!a * b) + l * (!a * b)
        * (!a * b) + (!a * l) + (b * l)
        * !a * (b + l) + (b * l) */
-      borrow = (!b1 & b2) | (!b1 & borrow) | (b2 & borrow);
+      borrow = ((!b1) & b2) | ((!b1) & borrow) | (b2 & borrow);
 
       mpz_setbit(res, cur_limb, cur_bit, dif);
     }
@@ -151,7 +160,7 @@ void mpz_sub(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
       unsigned b1 = mpz_getbit(&op1, cur_limb, cur_bit);
 
       unsigned dif = b1 ^ borrow;
-      borrow = !b1 & borrow;
+      borrow = (!b1) & borrow;
 
       mpz_setbit(res, cur_limb, cur_bit, dif);
     }
@@ -174,21 +183,27 @@ void mpz_div(mpz_t *quo, mpz_t *rem, const mpz_t *val1, const mpz_t *val2) {
     mpz_init_set(&minue, val1), mpz_init_set(&subtr, val2);
     mpz_realloc(&subtr, minue.size);
 
-    s21_size_t bitdif = mpz_sizeinbase2(&minue) - mpz_sizeinbase2(&subtr);
+    mpz_t clearing;
+    mpz_init(&clearing);
+    mpz_realloc(&clearing, quo->size);
+    mpz_and(quo, &clearing, quo);
+    mpz_and(rem, &clearing, rem);
+    mpz_clear(&clearing);
 
+    long bitdif = mpz_sizeinbase2(&minue) - mpz_sizeinbase2(&subtr);
     mpz_bitshiftl(&subtr, &subtr, bitdif);
 
     for (; bitdif >= 0; --bitdif) {
       mpz_bitshiftl(quo, quo, 1);
       if (mpz_cmp(&minue, &subtr) >= 0) {
         mpz_sub(&minue, &minue, &subtr);
-        mpz_setbit(quo, 0, 0, (mp_size_t)1);
+        mpz_setbit(quo, 0, 0, 1);
       }
       mpz_bitshiftr(&subtr, &subtr, 1);
     }
 
-    mpz_clear(&minue), mpz_clear(&subtr);
     mpz_set(rem, &minue);
+    mpz_clear(&minue), mpz_clear(&subtr);
   }
 }
 
@@ -275,11 +290,17 @@ void mpf_rint(mpf_t *val, int p) {
 int mpz_cmp(const mpz_t *val1, const mpz_t *val2) {
   int result = 0;
 
-  result = val1->size > val2->size ? 1 : -1;
+  if (val1->size > val2->size) {
+    result = 1;
+  } else if (val1->size < val2->size) {
+    result = -1;
+  }
 
-  if (!result) {
-    for (int cur_limb = val1->size - 1; !result && cur_limb >= 0; --cur_limb) {
-      result = val1->d[cur_limb] > val2->d[cur_limb] ? 1 : -1;
+  for (long cur_limb = val1->size - 1; !result && cur_limb >= 0; --cur_limb) {
+    if (val1->d[cur_limb] > val2->d[cur_limb]) {
+      result = 1;
+    } else if (val1->d[cur_limb] < val2->d[cur_limb]) {
+      result = -1;
     }
   }
 
@@ -328,7 +349,7 @@ void mpz_bitshiftr(mpz_t *res, const mpz_t *val, mp_size_t shift) {
 
 void mpz_bitshiftl(mpz_t *res, const mpz_t *val, mp_size_t shift) {
   mp_size_t new_size =
-      val->size ? val->size + (mpz_msb(val) + 1 + shift) / LIMB_SIZE : 0;
+      val->size ? ceil((double)(mpz_sizeinbase2(val) + shift) / LIMB_SIZE) : 0;
   bool is_zero = !new_size;
 
   if (!is_zero && res->alloc < new_size) {

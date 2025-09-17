@@ -1,4 +1,4 @@
-#include "../s21_string.h"
+#include "../include/s21_std.h"
 
 char *s21_strtok(char *str, const char *delim) {
   static char *search_target;

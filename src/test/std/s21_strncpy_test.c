@@ -1,4 +1,4 @@
-#include "../s21_test.h"
+#include "../include/s21_std_test.h"
 
 START_TEST(s21_strncpy_src_shorter_n) {
   const char *src = "hi";

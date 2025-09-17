@@ -1,4 +1,4 @@
-#include "../s21_test.h"
+#include "../include/s21_std_test.h"
 
 START_TEST(s21_strpbrk_good_find_1) {
   const char *str1 = "abcdef";

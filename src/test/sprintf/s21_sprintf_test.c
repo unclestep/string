@@ -1,4 +1,4 @@
-#include "../s21_test.h"
+#include "../include/s21_sprintf_test.h"
 
 #define LOCALE "en_US.UTF-8"
 

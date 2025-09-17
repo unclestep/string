@@ -1,4 +1,4 @@
-#include "../s21_string.h"
+#include "../include/s21_std.h"
 
 char *s21_strpbrk(const char *str1, const char *str2) {
   const char *dest = str1;

@@ -1,4 +1,4 @@
-#include "../s21_test.h"
+#include "../include/s21_std_test.h"
 
 START_TEST(s21_strncat_n_eq_len_1) {
   char dest[6] = "\0";
