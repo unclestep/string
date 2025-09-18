@@ -176,19 +176,14 @@ void mpz_sub(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
 
 void mpz_div(mpz_t *quo, mpz_t *rem, const mpz_t *val1, const mpz_t *val2) {
   if (mpz_cmp(val1, val2) == -1) {
-    mpz_set_ull(quo, 0);
     mpz_set(rem, val1);
+    mpz_set_ull(quo, 0);
   } else {
     mpz_t minue, subtr;
     mpz_init_set(&minue, val1), mpz_init_set(&subtr, val2);
     mpz_realloc(&subtr, minue.size);
 
-    mpz_t clearing;
-    mpz_init(&clearing);
-    mpz_realloc(&clearing, quo->size);
-    mpz_and(quo, &clearing, quo);
-    mpz_and(rem, &clearing, rem);
-    mpz_clear(&clearing);
+    mpz_erase(quo), mpz_erase(rem);
 
     long bitdif = mpz_sizeinbase2(&minue) - mpz_sizeinbase2(&subtr);
     mpz_bitshiftl(&subtr, &subtr, bitdif);

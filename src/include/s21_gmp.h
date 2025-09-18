@@ -148,7 +148,9 @@ static inline void mpz_and(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   const mpz_t *gr, *le;
   val1->size >= val2->size ? (gr = val1, le = val2) : (gr = val2, le = val1);
 
-  mpz_realloc(res, le->size);
+  if (res->alloc < le->size) {
+    mpz_realloc(res, le->size);
+  }
 
   for (mp_size_t cur_limb = 0; cur_limb < le->size; ++cur_limb) {
     res->d[cur_limb] = gr->d[cur_limb] & le->d[cur_limb];
@@ -157,6 +159,14 @@ static inline void mpz_and(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   for (res->size = le->size; res->size > 0 && !res->d[res->size - 1];
        --res->size) {
   }
+}
+
+/* Erasing the number by setting all its limbs to zero */
+static inline void mpz_erase(mpz_t *val) {
+  for (mp_size_t i = 0; i != val->size; ++i) {
+    val->d[i] = (limb_t)0;
+  }
+  val->size = 0;
 }
 
 /* Comparison Functions */
@@ -222,14 +232,13 @@ static inline void mpz_div10(mpz_t *quo, mpz_t *rem, const mpz_t *val) {
 
 static inline void mpz_idiv_2exp(mpz_t *quo, mpz_t *rem, const mpz_t *val,
                                  int exp) {
-  mpz_bitshiftr(quo, val, exp);
-
   mpz_t mask;
   mpz_init_set_ull(&mask, 1);
   mpz_bitshiftl(&mask, &mask, exp);
   mpz_sub_ull(&mask, &mask, 1);
-
   mpz_and(rem, val, &mask);
+
+  mpz_bitshiftr(quo, val, exp);
 
   mpz_clear(&mask);
 }
