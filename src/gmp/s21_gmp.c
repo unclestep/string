@@ -210,18 +210,19 @@ void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p) {
 
   mpz_idiv_2exp(res->man, &rem, val, exp);
   res->fig = mpz_exactsizeinbase10(res->man);
-  res->exp = res->fig - 1;
+  res->exp = res->man->size ? res->fig - 1 : -1;
 
-  bool is_signif = res->fig > 0;
-  bool was_divided = false;
-  p += 2; /* Get guard and sticky bits */
+  bool is_signif = res->man->size;
+  bool was_divided = true;
+  /* If there is no whole part, for sci-notation we need an extra digit */
+  p = p + 2 + !is_signif; /* Get guard and sticky digits */
 
   /* Only to get know if rem < divisor */
   mpz_t divisor;
   mpz_init_set_ull(&divisor, 1);
   mpz_bitshiftl(&divisor, &divisor, exp);
 
-  for (; p > 0; p -= is_signif, ++res->fig) {
+  for (; p && rem.size; p -= is_signif, ++res->fig) {
     mpz_mul10(&rem, &rem);
     mpz_mul10(res->man, res->man);
 
@@ -237,13 +238,17 @@ void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p) {
     }
   }
 
+  for (; p; --p, ++res->fig) {
+    mpz_mul10(res->man, res->man);
+  }
+
   /* Somehow mark if the fraction is not ended */
   /* This is the case when guard = [0, 9], sticky = 0, rem > 0 */
   if (!was_divided) {
     mpz_add_ull(res->man, res->man, 1); /* Will be rounded correctly */
   }
 
-  mpz_clear(&quo), mpz_clear(&rem);
+  mpz_clear(&quo), mpz_clear(&rem), mpz_clear(&divisor);
 }
 
 /* p - target figures that the value should have */
@@ -255,7 +260,7 @@ void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p) {
 /* Like this: 123.456789 (1.23456789e+02) -> 123.46 (1.23460000e+02) */
 /* Use the following formula for p: */
 /* val->exp >= 0: val->exp + 1 + desirable_after_dot_precision */
-/* val->exp < 0: desirable_after_dot_precision */
+/* val->exp < 0: 1 + desirable_after_dot_precision */
 /* NOTE: Any other function must handle the case when p > val's figures */
 void mpf_rint(mpf_t *val, int p) {
   mpz_t rem;
@@ -415,7 +420,7 @@ void mpf_to_fltnot(char *dst, mpf_t *src, int p) {
 /* NOTE: Use mpz_sizeinbase10 to properly allocate the memory for the string */
 /* NOTE: Argument p accepts the fractional precision */
 void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
-  mpf_rint(src, p + 1);
+  src->exp >= 0 ? mpf_rint(src, p + 1) : mpf_rint(src, abs(src->exp) + p + 1);
 
   /* whole[1] + dot[1] + prec[p] + e[1] + e_sign[1] + e_len[up to 3] */
   char e = big_e ? 'E' : 'e';

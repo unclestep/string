@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "s21_defines.h"
@@ -210,7 +211,7 @@ static inline void mpz_mul10(mpz_t *res, const mpz_t *val) {
   mpz_t add1, add2;
   mpz_init(&add1), mpz_init(&add2);
 
-  mpz_bitshiftl(&add1, val, 3), mpz_bitshiftl(&add2, val, 2);
+  mpz_bitshiftl(&add1, val, 3), mpz_bitshiftl(&add2, val, 1);
   mpz_add(res, &add1, &add2);
 
   mpz_clear(&add1), mpz_clear(&add2);
@@ -232,15 +233,17 @@ static inline void mpz_div10(mpz_t *quo, mpz_t *rem, const mpz_t *val) {
 
 static inline void mpz_idiv_2exp(mpz_t *quo, mpz_t *rem, const mpz_t *val,
                                  int exp) {
-  mpz_t mask;
-  mpz_init_set_ull(&mask, 1);
+  /* val_copy is needed for cases when val == rem or val == quo */
+  mpz_t mask, val_copy;
+  mpz_init_set(&val_copy, val), mpz_init_set_ull(&mask, 1);
+
   mpz_bitshiftl(&mask, &mask, exp);
   mpz_sub_ull(&mask, &mask, 1);
   mpz_and(rem, val, &mask);
 
-  mpz_bitshiftr(quo, val, exp);
+  mpz_bitshiftr(quo, &val_copy, exp);
 
-  mpz_clear(&mask);
+  mpz_clear(&mask), mpz_clear(&val_copy);
 }
 
 void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p);
@@ -262,20 +265,22 @@ static inline s21_size_t mpz_sizeinbase10(const mpz_t *val) {
 
 /* The result will be always exact but the function is performance demanding */
 static inline s21_size_t mpz_exactsizeinbase10(const mpz_t *val) {
-  mpz_t checker;
-  mpz_init_set_ull(&checker, 1);
-
   s21_size_t size = mpz_sizeinbase10(val); /* For now this is inexact */
 
-  for (s21_size_t i = size; i > 0; --i) {
-    mpz_mul10(&checker, &checker);
-  }
+  if (val->size) {
+    mpz_t sizechecker;
+    mpz_init_set_ull(&sizechecker, 1);
 
-  if (mpz_cmp(&checker, val) == 1) {
-    size -= 1; /* And now this is exact */
-  }
+    for (s21_size_t i = 1; i != size; ++i) {
+      mpz_mul10(&sizechecker, &sizechecker);
+    }
 
-  mpz_clear(&checker);
+    if (mpz_cmp(val, &sizechecker) == -1) {
+      size -= 1; /* And now this is exact */
+    }
+
+    mpz_clear(&sizechecker);
+  }
 
   return size;
 }
