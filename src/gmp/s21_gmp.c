@@ -1,6 +1,7 @@
 #include "../include/s21_gmp.h"
 
 #include <stdio.h>
+#define USE_GCC_BUILTINS
 
 /* Arithmetic Functions */
 #ifdef USE_GCC_BUILTINS
@@ -208,11 +209,11 @@ void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p) {
   mpz_t quo, rem;
   mpz_init(&quo), mpz_init(&rem);
 
-  mpz_idiv_2exp(res->man, &rem, val, exp);
-  res->fig = mpz_exactsizeinbase10(res->man);
-  res->exp = res->man->size ? res->fig - 1 : -1;
+  mpz_idiv_2exp(&res->man, &rem, val, exp);
+  res->fig = mpz_exactsizeinbase10(&res->man);
+  res->exp = res->man.size ? res->fig - 1 : -1;
 
-  bool is_signif = res->man->size;
+  bool is_signif = res->man.size;
   bool was_divided = true;
   /* If there is no whole part, for sci-notation we need an extra digit */
   p = p + 2 + !is_signif; /* Get guard and sticky digits */
@@ -224,7 +225,7 @@ void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p) {
 
   for (; p && rem.size; p -= is_signif, ++res->fig) {
     mpz_mul10(&rem, &rem);
-    mpz_mul10(res->man, res->man);
+    mpz_mul10(&res->man, &res->man);
 
     if (mpz_cmp(&rem, &divisor) == -1) {
       was_divided = false;
@@ -234,18 +235,18 @@ void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p) {
       is_signif = true;
 
       mpz_idiv_2exp(&quo, &rem, &rem, exp);
-      mpz_add(res->man, res->man, &quo);
+      mpz_add(&res->man, &res->man, &quo);
     }
   }
 
   for (; p; --p, ++res->fig) {
-    mpz_mul10(res->man, res->man);
+    mpz_mul10(&res->man, &res->man);
   }
 
   /* Somehow mark if the fraction is not ended */
   /* This is the case when guard = [0, 9], sticky = 0, rem > 0 */
   if (!was_divided) {
-    mpz_add_ull(res->man, res->man, 1); /* Will be rounded correctly */
+    mpz_add_ull(&res->man, &res->man, 1); /* Will be rounded correctly */
   }
 
   mpz_clear(&quo), mpz_clear(&rem), mpz_clear(&divisor);
@@ -263,14 +264,14 @@ void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p) {
 /* val->exp < 0: 1 + desirable_after_dot_precision */
 /* NOTE: Any other function must handle the case when p > val's figures */
 void mpf_rint(mpf_t *val, int p) {
-  mpz_t rem;
-  mpz_init(&rem);
+  mpz_t quo, rem;
+  mpz_init(&quo), mpz_init(&rem);
 
   limb_t guard = 0;
   bool sticky = false;
 
   for (; val->fig > p; --val->fig) {
-    mpz_div10(val->man, &rem, val->man);
+    mpz_div10(&val->man, &rem, &val->man);
 
     if (val->fig - p == 1) {
       guard = rem.d[0];
@@ -279,11 +280,17 @@ void mpf_rint(mpf_t *val, int p) {
     }
   }
 
-  mpz_clear(&rem);
+  if (guard > 5 || (guard == 5 && (sticky || mpz_odd(&val->man)))) {
+    mpz_div10(&quo, &rem, &val->man);
+    if (rem.d[0] == 9) {
+      val->exp += 1;
+      if (val->exp > 0) val->fig += 1;
+    }
 
-  if (guard > 5 || (guard == 5 && (sticky || mpz_odd(val->man)))) {
-    mpz_add_ull(val->man, val->man, 1);
+    mpz_add_ull(&val->man, &val->man, 1);
   }
+
+  mpz_clear(&quo), mpz_clear(&rem);
 }
 
 /* Comparison Functions */
@@ -386,28 +393,29 @@ void mpz_bitshiftl(mpz_t *res, const mpz_t *val, mp_size_t shift) {
 /* Conversion Functions */
 /* NOTE: Use mpz_sizeinbase10 to properly allocate the memory for the string */
 void mpf_to_fltnot(char *dst, mpf_t *src, int p) {
-  int wholes = src->exp >= 0 ? src->exp + 1 : 0;
+  int wholes = src->exp >= 0 ? src->exp + 1 : 1;
 
   mpf_rint(src, wholes + p);
+  wholes = src->exp >= 0 ? src->exp + 1 : 1;
 
   /* wholes[wholes] + dot[1] + prec[prec] */
-  int len = wholes + p + 1;
-
-  dst[len] = '\0';
-  int cur = len - 1;
 
   int fracs = src->exp >= 0 ? src->fig - src->exp - 1 : src->fig - 1;
   int pdif = p > fracs ? p - fracs : 0;
+
+  int cur = wholes + p + (fracs > 0);
+
+  dst[cur--] = '\0';
 
   for (; pdif != 0; --pdif) {
     dst[cur--] = '0';
   }
 
   mpz_t quo, rem;
-  mpz_init_set(&quo, src->man), mpz_init(&rem);
+  mpz_init_set(&quo, &src->man), mpz_init(&rem);
 
   for (int fig = src->fig; fig > 0; --fig) {
-    if (fig == wholes) {
+    if (fig == wholes && p) {
       dst[cur--] = '.';
     }
     mpz_div10(&quo, &rem, &quo);
@@ -449,7 +457,7 @@ void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
   }
 
   mpz_t quo, rem;
-  mpz_init_set(&quo, src->man), mpz_init(&rem);
+  mpz_init_set(&quo, &src->man), mpz_init(&rem);
 
   for (int fig = src->fig; fig > 1; --fig) {
     mpz_div10(&quo, &rem, &quo);
@@ -463,8 +471,30 @@ void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
   mpz_clear(&quo), mpz_clear(&rem);
 }
 
+/* The result will be always exact but the function is performance demanding */
+s21_size_t mpz_exactsizeinbase10(const mpz_t *val) {
+  s21_size_t size = mpz_sizeinbase10(val); /* For now this is inexact */
+
+  if (val->size) {
+    mpz_t sizechecker;
+    mpz_init_set_ull(&sizechecker, 1);
+
+    for (s21_size_t i = 1; i != size; ++i) {
+      mpz_mul10(&sizechecker, &sizechecker);
+    }
+
+    if (mpz_cmp(val, &sizechecker) == -1) {
+      size -= 1; /* And now this is exact */
+    }
+
+    mpz_clear(&sizechecker);
+  }
+
+  return size;
+}
+
 void mpz_to_mpf(mpf_t *dst, mpz_t *src) {
-  mpz_set(dst->man, src);
+  mpz_set(&dst->man, src);
   dst->fig = mpz_exactsizeinbase10(src);
   dst->exp = dst->fig - 1;
 }

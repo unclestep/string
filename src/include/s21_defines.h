@@ -51,9 +51,9 @@ typedef struct mpz_t {
 } mpz_t;
 
 typedef struct mpf_t {
-  mpz_t *man; /* Mantissa */
-  int exp;    /* Exponent */
-  int fig;    /* Figures of number */
+  mpz_t man; /* Mantissa */
+  int exp;   /* Exponent */
+  int fig;   /* Figures of number */
 } mpf_t;
 
 #endif

@@ -73,13 +73,13 @@ static inline void mpz_init_set(mpz_t *dst, const mpz_t *src) {
 
 /* MPF Initialization Functions */
 static inline void mpf_init(mpf_t *val) {
-  mpz_init(val->man);
+  mpz_init(&val->man);
   val->exp = 0;
   val->fig = 0;
 }
 
 static inline void mpf_clear(mpf_t *val) {
-  mpz_clear(val->man);
+  mpz_clear(&val->man);
   val->exp = 0;
   val->fig = 0;
 }
@@ -162,6 +162,22 @@ static inline void mpz_and(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   }
 }
 
+/* Miscellaneous Functions */
+static inline s21_size_t mpz_sizeinbase2(const mpz_t *val) {
+  return val->size
+             ? (s21_size_t)((val->size - 1) * LIMB_SIZE + mpz_msb(val) + 1)
+             : 0;
+}
+
+/* The result will be exact or 1 too big */
+static inline s21_size_t mpz_sizeinbase10(const mpz_t *val) {
+  return (s21_size_t)(LOG10_2 * mpz_sizeinbase2(val)) + 1;
+}
+
+s21_size_t mpz_exactsizeinbase10(const mpz_t *val);
+
+static inline bool mpz_odd(const mpz_t *val) { return mpz_getbit(val, 0, 0); }
+
 /* Erasing the number by setting all its limbs to zero */
 static inline void mpz_erase(mpz_t *val) {
   for (mp_size_t i = 0; i != val->size; ++i) {
@@ -218,13 +234,9 @@ static inline void mpz_mul10(mpz_t *res, const mpz_t *val) {
 }
 
 static inline void mpz_mul_2exp(mpf_t *res, const mpz_t *val, int exp) {
-  mpz_t tmp;
-  mpz_init(&tmp);
-
-  mpz_bitshiftl(&tmp, val, exp);
-  mpz_to_mpf(res, &tmp);
-
-  mpz_clear(&tmp);
+  mpz_bitshiftl(&res->man, val, exp);
+  res->fig = mpz_exactsizeinbase10(&res->man);
+  res->exp = res->fig - 1;
 }
 
 static inline void mpz_div10(mpz_t *quo, mpz_t *rem, const mpz_t *val) {
@@ -233,58 +245,21 @@ static inline void mpz_div10(mpz_t *quo, mpz_t *rem, const mpz_t *val) {
 
 static inline void mpz_idiv_2exp(mpz_t *quo, mpz_t *rem, const mpz_t *val,
                                  int exp) {
-  /* val_copy is needed for cases when val == rem or val == quo */
-  mpz_t mask, val_copy;
-  mpz_init_set(&val_copy, val), mpz_init_set_ull(&mask, 1);
+  mpz_t op, mask;
+  mpz_init_set(&op, val), mpz_init_set_ull(&mask, 1);
 
   mpz_bitshiftl(&mask, &mask, exp);
   mpz_sub_ull(&mask, &mask, 1);
-  mpz_and(rem, val, &mask);
+  mpz_and(rem, &op, &mask);
 
-  mpz_bitshiftr(quo, &val_copy, exp);
+  mpz_bitshiftr(quo, &op, exp);
 
-  mpz_clear(&mask), mpz_clear(&val_copy);
+  mpz_clear(&mask), mpz_clear(&op);
 }
 
 void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p);
 
 /* Rounding Functions */
 void mpf_rint(mpf_t *val, int p);
-
-/* Miscellaneous Functions */
-static inline s21_size_t mpz_sizeinbase2(const mpz_t *val) {
-  return val->size
-             ? (s21_size_t)((val->size - 1) * LIMB_SIZE + mpz_msb(val) + 1)
-             : 0;
-}
-
-/* The result will be exact or 1 too big */
-static inline s21_size_t mpz_sizeinbase10(const mpz_t *val) {
-  return (s21_size_t)(LOG10_2 * mpz_sizeinbase2(val)) + 1;
-}
-
-/* The result will be always exact but the function is performance demanding */
-static inline s21_size_t mpz_exactsizeinbase10(const mpz_t *val) {
-  s21_size_t size = mpz_sizeinbase10(val); /* For now this is inexact */
-
-  if (val->size) {
-    mpz_t sizechecker;
-    mpz_init_set_ull(&sizechecker, 1);
-
-    for (s21_size_t i = 1; i != size; ++i) {
-      mpz_mul10(&sizechecker, &sizechecker);
-    }
-
-    if (mpz_cmp(val, &sizechecker) == -1) {
-      size -= 1; /* And now this is exact */
-    }
-
-    mpz_clear(&sizechecker);
-  }
-
-  return size;
-}
-
-static inline bool mpz_odd(const mpz_t *val) { return mpz_getbit(val, 0, 0); }
 
 #endif
