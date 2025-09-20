@@ -301,12 +301,12 @@ bool spec_di(char **scur, int *written, conv_t *mods, va_list *args) {
       *bufcur++ = '+';
     }
 
-    if (mods->prec < 0 && widdif && mods->zero) {
-      for (int i = 0; i < widdif; ++i, ++bufcur) {
-        *bufcur = '0';
-      }
-      buf.size += widdif;
-    }
+    // if (mods->prec < 0 && widdif && mods->zero) {
+    //   for (int i = 0; i < widdif; ++i, ++bufcur) {
+    //     *bufcur = '0';
+    //   }
+    //   buf.size += widdif;
+    // }
 
     for (int i = 0; i < precdif; ++i, ++bufcur) {
       *bufcur = '0';
@@ -642,116 +642,144 @@ bool spec_p(char **scur, int *written, conv_t *mods, va_list *args) {
   return is_error;
 }
 
-// bool spec_f(char **scur, int *written, conv_t *mods, va_list *args) {
-//   uint128_t bits = 0;
-//   int whole_part_len = 0;
-//   int sign = 0;
-//   bool is_error = false;
-//
-//   if (mods->len == 'L') {
-//     long double arg = va_arg(*args, long double);
-//     s21_memcpy(&bits, &arg, sizeof(long double));
-//     whole_part_len = fabsl(arg) ? floorl(log10l(fabsl(arg))) + 1 : 0;
-//     sign = arg < 0 || mods->space || mods->plus ? 1 : 0;
-//
-//   } else {
-//     double arg = va_arg(*args, double);
-//     s21_memcpy(&bits, &arg, sizeof(double));
-//     whole_part_len = fabs(arg) ? floor(log10(fabs(arg))) + 1 : 0;
-//     sign = arg < 0 || mods->space || mods->plus ? 1 : 0;
-//   }
-//
-//   int prec = mods->prec < 0 ? 6 : mods->prec;
-//   int dot = prec || (!prec && mods->hash) ? 1 : 0;
-//   int arglen = whole_part_len + prec + dot + sign;
-//   int wid = mods->wid < 0 ? 0 : mods->wid;
-//   int widdif = wid - arglen < 0 ? 0 : wid - arglen;
-//   int needed_alloc = arglen + widdif + 1;
-//
-//   sc_t buf = {0};
-//   buf.size = arglen;
-//   buf.alloc = needed_alloc;
-//   buf.d = malloc(needed_alloc);
-//   is_error = !buf.d;
-//
-//   if (!is_error) {
-//     mods->len == 'L' ? flttostr(buf.d, bits, LDOUBLE_MANTISSA_BITS,
-//                                 LDOUBLE_EXPONENT_BITS, true, mods)
-//                      : flttostr(buf.d, bits, DOUBLE_MANTISSA_BITS,
-//                                 DOUBLE_EXPONENT_BITS, false, mods);
-//   }
-//
-//   return is_error;
-// }
-//
-// void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
-//               const uint32_t expbits, const bool explicit_leading_bit,
-//               conv_t *mods) {
-//   const uint32_t bias = (1U << (expbits - 1)) - 1;
-//   const bool ieee_sign = (bits >> (manbits + expbits)) & 1U;
-//   const uint128_t ieee_man = bits & ((ONE << manbits) - 1);
-//   const uint32_t ieee_exp =
-//       (uint32_t)((bits >> manbits) & ((ONE << expbits) - 1));
-//   bool zero_inf_nan = false;
-//
-//   if (ieee_exp == 0 && ieee_man == 0) {
-//     *dst++ = '0';
-//     zero_inf_nan = true;
-//   } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man == 0) {
-//     for (const char *inf = "infinity"; *inf; ++dst, ++inf) {
-//       *dst = *inf;
-//     }
-//     zero_inf_nan = true;
-//   } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man != 0) {
-//     for (const char *nan = "nan"; *nan; ++dst, ++nan) {
-//       *dst = *nan;
-//     }
-//     zero_inf_nan = true;
-//   }
-//
-//   if (!zero_inf_nan) {
-//     /* f = m * 2^e */
-//     int32_t e = 0;
-//     uint64_t m = 0;
-//
-//     if (explicit_leading_bit) {
-//       e = ieee_exp == 0 ? 1 - bias - manbits + 1
-//                         : ieee_exp - bias - manbits + 1;
-//       m = ieee_man;
-//     } else {
-//       e = ieee_exp == 0 ? 1 - bias - manbits : ieee_exp - bias - manbits;
-//       m = (1ULL << manbits) | ieee_man;
-//     }
-//
-//     mpf_t mpres;
-//     mpz_t mpman;
-//     mpf_init(&mpres), mpz_init_set_ull(&mpman, m);
-//
-//     int prec = mods->prec < 0 ? 6 : mods->prec;
-//     if (!prec && mods->spec == 'g') prec = 1;
-//
-//     /* Bitwise left shift by e (multiplication) */
-//     if (e >= 0) {
-//       mpz_mul_2exp(&mpres, &mpman, e);
-//     } else { /* Bitwise right shift by e until needed precision is reached
-//                 (fractional division) */
-//       e = -e;
-//       mpz_fdiv_2exp(&mpres, &mpman, e, prec);
-//     }
-//
-//     if (mods->spec == 'f') {
-//       mpf_to_fltnot(dst, &mpres, prec);
-//     } else if (mods->spec == 'e' || mods->spec == 'E') {
-//       mpf_to_scinot(dst, &mpres, prec, mods->spec == 'E');
-//     } else if (mods->spec == 'g' || mods->spec == 'G') {
-//       if (prec > mpres.exp && mpres.exp >= -4) {
-//         mpf_to_fltnot(dst, &mpres, prec - 1 - mpres.exp);
-//       } else {
-//         mpf_to_scinot(dst, &mpres, prec - 1, mods->spec == 'G');
-//       }
-//     }
-//
-//     mpf_clear(&mpres);
-//     mpz_clear(&mpman);
-//   }
-// }
+bool spec_f(char **scur, int *written, conv_t *mods, va_list *args) {
+  uint128_t bits = 0;
+  int whole_part_len = 0;
+  int sign = 0;
+  bool is_error = false;
+
+  if (mods->len == 'L') {
+    long double arg = va_arg(*args, long double);
+    s21_memcpy(&bits, &arg, sizeof(long double));
+    whole_part_len = fabsl(arg) ? floorl(log10l(fabsl(arg))) + 1 : 0;
+    sign = arg < 0 || mods->space || mods->plus ? 1 : 0;
+
+  } else {
+    double arg = va_arg(*args, double);
+    s21_memcpy(&bits, &arg, sizeof(double));
+    whole_part_len = fabs(arg) ? floor(log10(fabs(arg))) + 1 : 0;
+    sign = arg < 0 || mods->space || mods->plus ? 1 : 0;
+  }
+
+  int prec = mods->prec < 0 ? 6 : mods->prec;
+  int dot = prec || (!prec && mods->hash) ? 1 : 0;
+  int arglen = whole_part_len + prec + dot + sign;
+  int wid = mods->wid < 0 ? 0 : mods->wid;
+  int widdif = wid - arglen < 0 ? 0 : wid - arglen;
+  int needed_alloc = arglen + widdif + 1;
+
+  sc_t buf = {0};
+  buf.size = arglen;
+  buf.alloc = needed_alloc;
+  buf.d = malloc(needed_alloc);
+  is_error = !buf.d;
+
+  if (!is_error) {
+    char *bufcur = buf.d;
+
+    if (mods->space) {
+      *bufcur++ = ' ';
+    } else if (mods->plus) {
+      *bufcur++ = '+';
+    } else if (sign) {
+      *bufcur++ = '-';
+    }
+
+    mods->len == 'L' ? flttostr(bufcur, bits, LDOUBLE_MANTISSA_BITS,
+                                LDOUBLE_EXPONENT_BITS, true, mods)
+                     : flttostr(bufcur, bits, DOUBLE_MANTISSA_BITS,
+                                DOUBLE_EXPONENT_BITS, false, mods);
+
+    if (!s21_strchr(buf.d, '.') && mods->hash) {
+      bufcur = buf.d + s21_strlen(buf.d);
+      *bufcur++ = '.';
+      *bufcur = '\0';
+    }
+
+    is_error = addwid(&buf, mods);
+  }
+
+  if (!is_error) {
+    for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
+      **scur = buf.d[i];
+    }
+    *written += buf.size;
+  }
+
+  if (buf.d) {
+    free(buf.d);
+  }
+
+  return is_error;
+}
+
+void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
+              const uint32_t expbits, const bool explicit_leading_bit,
+              conv_t *mods) {
+  const uint32_t bias = (1U << (expbits - 1)) - 1;
+  const uint128_t ieee_man = bits & ((ONE << manbits) - 1);
+  const uint32_t ieee_exp =
+      (uint32_t)((bits >> manbits) & ((ONE << expbits) - 1));
+  bool zero_inf_nan = false;
+
+  if (ieee_exp == 0 && ieee_man == 0) {
+    *dst++ = '0';
+    zero_inf_nan = true;
+  } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man == 0) {
+    for (const char *inf = "inf"; *inf; ++dst, ++inf) {
+      *dst = *inf;
+    }
+    zero_inf_nan = true;
+  } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man != 0) {
+    for (const char *nan = "nan"; *nan; ++dst, ++nan) {
+      *dst = *nan;
+    }
+    zero_inf_nan = true;
+  }
+
+  if (!zero_inf_nan) {
+    /* f = m * 2^e */
+    int32_t e = 0;
+    uint64_t m = 0;
+
+    if (explicit_leading_bit) {
+      e = ieee_exp == 0 ? 1 - bias - manbits + 1
+                        : ieee_exp - bias - manbits + 1;
+      m = ieee_man;
+    } else {
+      e = ieee_exp == 0 ? 1 - bias - manbits : ieee_exp - bias - manbits;
+      m = (1ULL << manbits) | ieee_man;
+    }
+
+    mpf_t mpres;
+    mpz_t mpman;
+    mpf_init(&mpres), mpz_init_set_ull(&mpman, m);
+
+    int prec = mods->prec < 0 ? 6 : mods->prec;
+    if (!prec && mods->spec == 'g') prec = 1;
+
+    /* Bitwise left shift by e (multiplication) */
+    if (e >= 0) {
+      mpz_mul_2exp(&mpres, &mpman, e);
+    } else { /* Bitwise right shift by e until needed precision is reached
+                (fractional division) */
+      e = -e;
+      mpz_fdiv_2exp(&mpres, &mpman, e, prec);
+    }
+
+    if (mods->spec == 'f') {
+      mpf_to_fltnot(dst, &mpres, prec);
+    } else if (mods->spec == 'e' || mods->spec == 'E') {
+      mpf_to_scinot(dst, &mpres, prec, mods->spec == 'E');
+    } else if (mods->spec == 'g' || mods->spec == 'G') {
+      if (prec > mpres.exp && mpres.exp >= -4) {
+        mpf_to_fltnot(dst, &mpres, prec - 1 - mpres.exp);
+      } else {
+        mpf_to_scinot(dst, &mpres, prec - 1, mods->spec == 'G');
+      }
+    }
+
+    mpf_clear(&mpres);
+    mpz_clear(&mpman);
+  }
+}

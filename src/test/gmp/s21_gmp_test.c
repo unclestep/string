@@ -1,8 +1,5 @@
 #include "../include/s21_gmp_test.h"
 
-#include <stdio.h>
-#include <string.h>
-
 START_TEST(mpz_msb_all_ind) {
   mpz_t op;
   mpz_init(&op);

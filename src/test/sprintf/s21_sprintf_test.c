@@ -730,6 +730,20 @@ START_TEST(s21_sprintf_spec_di_width_flags_1) {
   ck_assert_int_eq(s21_strcmp(str1, "00021"), 0);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
+
+  read1 = s21_sprintf(str1, "%+05d", 21);
+  read2 = sprintf(str2, "%+05d", 21);
+
+  ck_assert_int_eq(s21_strcmp(str1, "+0021"), 0);
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+
+  read1 = s21_sprintf(str1, "% 05d", 21);
+  read2 = sprintf(str2, "% 05d", 21);
+
+  ck_assert_int_eq(s21_strcmp(str1, " 0021"), 0);
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
 }
 
 START_TEST(s21_sprintf_spec_di_width_flags_2) {

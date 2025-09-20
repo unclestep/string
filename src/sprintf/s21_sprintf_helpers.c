@@ -61,18 +61,25 @@ bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz) {
 }
 
 bool addwid(sc_t *arr, conv_t *mods) {
-  char widfil = mods->zero ? '0' : ' ';
+  char widfil = mods->zero && mods->prec < 0 ? '0' : ' ';
+  char *sign = s21_strpbrk(arr->d, "+- ");
+
   int widdif = mods->wid - arr->size > 0 ? mods->wid - arr->size : 0;
-  s21_size_t needed_alloc = arr->size + widdif + 1;
+  s21_size_t new_alloc = arr->size + widdif + 1;
+
   bool is_error = false;
+  bool is_sign = sign && widfil == '0';
 
   if (widdif > 0) {
-    if (needed_alloc > arr->alloc) {
-      char *buf = malloc(needed_alloc);
+    if (new_alloc > arr->alloc) {
+      char *buf = malloc(new_alloc);
       is_error = !buf;
+
       if (buf && !mods->minus) {
-        s21_memset(buf, widfil, widdif);
-        s21_memcpy(buf + widdif, arr->d, arr->size + 1);
+        if (is_sign) *buf = *sign;
+        s21_memset(buf + is_sign, widfil, widdif);
+        s21_memcpy(buf + is_sign + widdif, arr->d + is_sign,
+                   arr->size - is_sign + 1);
       } else if (buf && mods->minus) {
         s21_memcpy(buf, arr->d, arr->size);
         s21_memset(buf + arr->size, widfil, widdif);
@@ -85,10 +92,10 @@ bool addwid(sc_t *arr, conv_t *mods) {
       }
     } else {
       if (!mods->minus) {
-        for (int i = arr->size; i >= 0; --i) {
+        for (int i = arr->size; i >= is_sign; --i) {
           arr->d[i + widdif] = arr->d[i];
         }
-        s21_memset(arr->d, widfil, widdif);
+        s21_memset(arr->d + is_sign, widfil, widdif);
       } else {
         s21_memset(arr->d + arr->size, widfil, widdif);
         arr->d[arr->size + widdif] = '\0';
