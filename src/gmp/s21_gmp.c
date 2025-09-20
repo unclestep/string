@@ -1,7 +1,6 @@
 #include "../include/s21_gmp.h"
 
 #include <stdio.h>
-#define USE_GCC_BUILTINS
 
 /* Arithmetic Functions */
 #ifdef USE_GCC_BUILTINS
@@ -282,6 +281,7 @@ void mpf_rint(mpf_t *val, int p) {
 
   if (guard > 5 || (guard == 5 && (sticky || mpz_odd(&val->man)))) {
     mpz_div10(&quo, &rem, &val->man);
+
     if (rem.d[0] == 9) {
       val->exp += 1;
       if (val->exp > 0) val->fig += 1;
@@ -289,6 +289,15 @@ void mpf_rint(mpf_t *val, int p) {
 
     mpz_add_ull(&val->man, &val->man, 1);
   }
+
+  // /* Normalization */
+  // do {
+  //   mpz_div10(&quo, &rem, &val->man);
+  //   if (!rem.size) {
+  //     mpz_set(&val->man, &quo);
+  //     --val->fig;
+  //   }
+  // } while (!rem.size);
 
   mpz_clear(&quo), mpz_clear(&rem);
 }
@@ -403,7 +412,8 @@ void mpf_to_fltnot(char *dst, mpf_t *src, int p) {
   int fracs = src->exp >= 0 ? src->fig - src->exp - 1 : src->fig - 1;
   int pdif = p > fracs ? p - fracs : 0;
 
-  int cur = wholes + p + (fracs > 0);
+  /* pdif > 0 for cases when src is whole but p > 0 (trailing zeros) */
+  int cur = wholes + p + (fracs > 0 || pdif > 0);
 
   dst[cur--] = '\0';
 
@@ -436,21 +446,18 @@ void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
   int e_len = abs(src->exp) < 100 ? 2 : 3;
   int e_val = abs(src->exp);
 
-  int len = p + 4 + e_val;
+  int fracs = src->exp >= 0 ? src->fig - 1 : src->fig - e_val - 1;
+  int pdif = p > fracs ? p - fracs : 0;
+  int cur = p + e_len + 3 + (fracs > 0 || pdif > 0);
 
-  dst[len] = '\0';
-  int cur = len - 1;
+  dst[cur--] = '\0';
 
-  for (; cur >= len - e_len;) {
+  for (int i = 0; i != e_len; ++i, e_val /= 10) {
     dst[cur--] = e_val % 10 + '0';
-    e_val /= 10;
   }
 
   dst[cur--] = e_sign;
   dst[cur--] = e;
-
-  int fracs = src->exp >= 0 ? src->fig - 1 : src->fig + src->exp - 1;
-  int pdif = p > fracs ? p - fracs : 0;
 
   for (; pdif != 0; --pdif) {
     dst[cur--] = '0';
@@ -459,14 +466,22 @@ void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
   mpz_t quo, rem;
   mpz_init_set(&quo, &src->man), mpz_init(&rem);
 
-  for (int fig = src->fig; fig > 1; --fig) {
+  for (int f = fracs; f > 0; --f) {
     mpz_div10(&quo, &rem, &quo);
-    dst[cur--] = rem.d[0] + '0';
+    if (f <= p) {
+      dst[cur--] = rem.d[0] + '0';
+    }
   }
 
-  dst[cur--] = '.';
+  if (p) dst[cur--] = '.';
   mpz_div10(&quo, &rem, &quo);
-  dst[cur] = rem.d[0] = '0';
+  dst[cur] = rem.d[0] + '0';
+  if (cur < 0) {
+    printf("Final str: %s\n", dst);
+    printf("Fracs: %d\n", fracs);
+    printf("Fig: %d\n", src->fig);
+    printf("Cur at fisrt digit index: %d\n\n", cur);
+  }
 
   mpz_clear(&quo), mpz_clear(&rem);
 }
