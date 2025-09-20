@@ -284,20 +284,12 @@ void mpf_rint(mpf_t *val, int p) {
 
     if (rem.d[0] == 9) {
       val->exp += 1;
+
       if (val->exp > 0) val->fig += 1;
     }
 
     mpz_add_ull(&val->man, &val->man, 1);
   }
-
-  // /* Normalization */
-  // do {
-  //   mpz_div10(&quo, &rem, &val->man);
-  //   if (!rem.size) {
-  //     mpz_set(&val->man, &quo);
-  //     --val->fig;
-  //   }
-  // } while (!rem.size);
 
   mpz_clear(&quo), mpz_clear(&rem);
 }
@@ -448,7 +440,9 @@ void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
 
   int fracs = src->exp >= 0 ? src->fig - 1 : src->fig - e_val - 1;
   int pdif = p > fracs ? p - fracs : 0;
-  int cur = p + e_len + 3 + (fracs > 0 || pdif > 0);
+
+  /* fracs > 0 && p — case when there are trailing zero but p == 0 */
+  int cur = p + e_len + 3 + ((fracs > 0 && p) || pdif > 0);
 
   dst[cur--] = '\0';
 
@@ -468,6 +462,7 @@ void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
 
   for (int f = fracs; f > 0; --f) {
     mpz_div10(&quo, &rem, &quo);
+    /* We have unnormalized number so we need to skip trailing zeros */
     if (f <= p) {
       dst[cur--] = rem.d[0] + '0';
     }
@@ -476,12 +471,6 @@ void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
   if (p) dst[cur--] = '.';
   mpz_div10(&quo, &rem, &quo);
   dst[cur] = rem.d[0] + '0';
-  if (cur < 0) {
-    printf("Final str: %s\n", dst);
-    printf("Fracs: %d\n", fracs);
-    printf("Fig: %d\n", src->fig);
-    printf("Cur at fisrt digit index: %d\n\n", cur);
-  }
 
   mpz_clear(&quo), mpz_clear(&rem);
 }

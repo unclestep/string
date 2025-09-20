@@ -1369,6 +1369,26 @@ START_TEST(mpf_to_fltnot_new_diglen_4) {
 }
 END_TEST
 
+START_TEST(mpf_to_fltnot_new_diglen_5) {
+  mpf_t op;
+  mpf_init(&op);
+  mpz_set_ull(&op.man, 195);  // 0.00195 (1.95e-03) -> 0.002
+  op.fig = 6;
+  op.exp = -3;
+
+  char dst[6] = {0};
+  char exp[6] = "0.002";
+
+  mpf_to_fltnot(dst, &op, 3);
+
+  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(op.exp, -3);
+  ck_assert_int_eq(op.fig, 4);
+
+  mpf_clear(&op);
+}
+END_TEST
+
 START_TEST(mpf_to_fltnot_round_to_even_1) {
   mpf_t op;
   mpf_init(&op);
@@ -1767,7 +1787,7 @@ END_TEST
 START_TEST(mpf_to_scinot_new_diglen_2) {
   mpf_t op;
   mpf_init(&op);
-  mpz_set_ull(&op.man, 99501);
+  mpz_set_ull(&op.man, 99501);  // 0.99501 (9.9501e-01)
   op.fig = 6;
   op.exp = -1;
 
@@ -1787,7 +1807,7 @@ END_TEST
 START_TEST(mpf_to_scinot_new_diglen_3) {
   mpf_t op;
   mpf_init(&op);
-  mpz_set_ull(&op.man, 9995);
+  mpz_set_ull(&op.man, 9995);  // 9.995 -> 10.00
   op.fig = 4;
   op.exp = 0;
 
@@ -1815,10 +1835,29 @@ START_TEST(mpf_to_scinot_new_diglen_4) {
   char exp[6] = "1e-02";
 
   mpf_to_scinot(dst, &op, 0, false);
-  printf("dst: %s\n", dst);
 
   ck_assert_int_eq(s21_strcmp(dst, exp), 0);
   ck_assert_int_eq(op.exp, -2);
+  ck_assert_int_eq(op.fig, 4);
+
+  mpf_clear(&op);
+}
+END_TEST
+
+START_TEST(mpf_to_scinot_new_diglen_5) {
+  mpf_t op;
+  mpf_init(&op);
+  mpz_set_ull(&op.man, 195);  // 0.00195 (1.95e-03) -> 0.002
+  op.fig = 6;
+  op.exp = -3;
+
+  char dst[6] = {0};
+  char exp[6] = "2e-03";
+
+  mpf_to_scinot(dst, &op, 0, false);
+
+  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(op.exp, -3);
   ck_assert_int_eq(op.fig, 4);
 
   mpf_clear(&op);
@@ -2059,6 +2098,7 @@ Suite *suite_s21_gmp_test(void) {
   tcase_add_test(tc_to_fltnot, mpf_to_fltnot_new_diglen_2);
   tcase_add_test(tc_to_fltnot, mpf_to_fltnot_new_diglen_3);
   tcase_add_test(tc_to_fltnot, mpf_to_fltnot_new_diglen_4);
+  tcase_add_test(tc_to_fltnot, mpf_to_fltnot_new_diglen_5);
   tcase_add_test(tc_to_fltnot, mpf_to_fltnot_round_to_even_1);
   tcase_add_test(tc_to_fltnot, mpf_to_fltnot_round_to_even_2);
   tcase_add_test(tc_to_fltnot, mpf_to_fltnot_default_round_1);
@@ -2087,6 +2127,7 @@ Suite *suite_s21_gmp_test(void) {
   tcase_add_test(tc_to_scinot, mpf_to_scinot_new_diglen_2);
   tcase_add_test(tc_to_scinot, mpf_to_scinot_new_diglen_3);
   tcase_add_test(tc_to_scinot, mpf_to_scinot_new_diglen_4);
+  tcase_add_test(tc_to_scinot, mpf_to_scinot_new_diglen_5);
   tcase_add_test(tc_to_scinot, mpf_to_scinot_round_to_even_1);
   tcase_add_test(tc_to_scinot, mpf_to_scinot_round_to_even_2);
   tcase_add_test(tc_to_scinot, mpf_to_scinot_default_round_1);
