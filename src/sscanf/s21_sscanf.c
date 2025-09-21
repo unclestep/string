@@ -1,4 +1,4 @@
-#include "../include/s21_sscanf.h"
+#include "s21_sscanf.h"
 
 #define s21_setargi(TYPE, FUNCTION, BASE)                \
   {                                                      \

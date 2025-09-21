@@ -1,4 +1,4 @@
-#include "../include/s21_bonus_test.h"
+#include "s21_bonus_test.h"
 
 START_TEST(s21_to_upper_nullptr) {
   ck_assert_ptr_eq(s21_to_upper(s21_NULL), s21_NULL);

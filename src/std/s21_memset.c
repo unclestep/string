@@ -1,4 +1,4 @@
-#include "../include/s21_std.h"
+#include "s21_std.h"
 
 void *s21_memset(void *str, int c, s21_size_t n) {
   s21_byte_t *cur = (s21_byte_t *)str;

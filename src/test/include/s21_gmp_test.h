@@ -3,7 +3,7 @@
 
 #include <check.h>
 
-#include "../../include/s21_gmp.h"
+#include "s21_gmp.h"
 
 Suite *suite_s21_gmp_test(void);
 

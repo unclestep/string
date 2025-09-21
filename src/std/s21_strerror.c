@@ -1,6 +1,6 @@
-#include "../include/s21_errno.h"
-#include "../include/s21_sprintf.h"
-#include "../include/s21_std.h"
+#include "s21_errno.h"
+#include "s21_sprintf.h"
+#include "s21_std.h"
 
 char *s21_strerror(int errnum) {
   static const char *error_matrix[] = ERRORS;

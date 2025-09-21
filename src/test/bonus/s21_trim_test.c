@@ -1,4 +1,4 @@
-#include "../include/s21_bonus_test.h"
+#include "s21_bonus_test.h"
 
 START_TEST(s21_trim_null) {
   const char *src = NULL;
@@ -15,6 +15,7 @@ START_TEST(s21_trim_src_empty) {
   ck_assert_int_eq(s21_strcmp(r, "\0"), 0);
   free(r);
 }
+END_TEST
 
 START_TEST(s21_trim_src_is_trim_chars) {
   const char *src = "abcdef";
@@ -23,6 +24,7 @@ START_TEST(s21_trim_src_is_trim_chars) {
   ck_assert_int_eq(s21_strcmp(r, "\0"), 0);
   free(r);
 }
+END_TEST
 
 START_TEST(s21_trim_trim_chars_empty) {
   const char *src = "abcdef";
@@ -31,6 +33,7 @@ START_TEST(s21_trim_trim_chars_empty) {
   ck_assert_int_eq(s21_strcmp(r, src), 0);
   free(r);
 }
+END_TEST
 
 START_TEST(s21_trim_both_sides) {
   const char *src = "*** Hello, World!!! ***";
@@ -39,6 +42,7 @@ START_TEST(s21_trim_both_sides) {
   ck_assert_int_eq(s21_strcmp(r, "Hello, World"), 0);
   free(r);
 }
+END_TEST
 
 START_TEST(s21_trim_left_side) {
   const char *src = "*** Hello, World!###";
@@ -47,6 +51,7 @@ START_TEST(s21_trim_left_side) {
   ck_assert_int_eq(s21_strcmp(r, "Hello, World!###"), 0);
   free(r);
 }
+END_TEST
 
 START_TEST(s21_trim_right_side) {
   const char *src = "###Hello, World! ***";
@@ -55,6 +60,7 @@ START_TEST(s21_trim_right_side) {
   ck_assert_int_eq(s21_strcmp(r, "###Hello, World!"), 0);
   free(r);
 }
+END_TEST
 
 Suite *suite_s21_trim_test(void) {
   Suite *s = suite_create("s21_trim_test");

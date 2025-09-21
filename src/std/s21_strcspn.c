@@ -1,4 +1,4 @@
-#include "../include/s21_std.h"
+#include "s21_std.h"
 
 s21_size_t s21_strcspn(const char *str1, const char *str2) {
   const char *cur = str1;

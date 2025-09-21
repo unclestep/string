@@ -1,4 +1,4 @@
-#include "../include/s21_std.h"
+#include "s21_std.h"
 
 int s21_memcmp(const void *str1, const void *str2, s21_size_t n) {
   const s21_byte_t *cur1 = (const s21_byte_t *)str1;

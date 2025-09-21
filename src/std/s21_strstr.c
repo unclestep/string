@@ -1,4 +1,4 @@
-#include "../include/s21_std.h"
+#include "s21_std.h"
 
 char *s21_strstr(const char *haystack, const char *needle) {
   const char *hl = haystack;

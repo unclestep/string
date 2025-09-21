@@ -1,4 +1,4 @@
-#include "../include/s21_bonus_test.h"
+#include "s21_bonus_test.h"
 
 START_TEST(s21_insert_src_empty) {
   const char *src = "\0";
@@ -16,6 +16,7 @@ START_TEST(s21_insert_str_empty) {
   ck_assert_int_eq(s21_strcmp(r, src), 0);
   free(r);
 }
+END_TEST
 
 START_TEST(s21_insert_normal) {
   const char *src = "aaabbb";
@@ -24,6 +25,7 @@ START_TEST(s21_insert_normal) {
   ck_assert_int_eq(s21_strcmp(r, "aaa bbb"), 0);
   free(r);
 }
+END_TEST
 
 START_TEST(s21_insert_to_end) {
   const char *src = "Hello, ";
@@ -32,6 +34,7 @@ START_TEST(s21_insert_to_end) {
   ck_assert_int_eq(s21_strcmp(r, "Hello, world!"), 0);
   free(r);
 }
+END_TEST
 
 START_TEST(s21_insert_null) {
   const char *src = s21_NULL;
@@ -39,6 +42,7 @@ START_TEST(s21_insert_null) {
   char *r = s21_insert(src, str, 6);
   ck_assert_ptr_eq(r, s21_NULL);
 }
+END_TEST
 
 Suite *suite_s21_insert_test(void) {
   Suite *s = suite_create("s21_insert_test");

@@ -1,4 +1,4 @@
-#include "../include/s21_sprintf.h"
+#include "s21_sprintf.h"
 
 int s21_sprintf(char *str, const char *format, ...) {
   va_list args;
@@ -145,15 +145,11 @@ bool convert(char **scur, int *written, conv_t *mods, va_list *args) {
       is_error = spec_u(scur, written, mods, args);
       break;
     case 'f':
-      // is_error = spec_f(scur, written, mods, args);
-      break;
     case 'e':
     case 'E':
-      // is_error = spec_eE(scur, written, mods, args);
-      break;
     case 'g':
     case 'G':
-      // is_error = spec_gG(scur, written, mods, args);
+      is_error = spec_feEgG(scur, written, mods, args);
       break;
     case 'n':
       // is_error = spec_n(scur, written, mods, args);
@@ -642,7 +638,7 @@ bool spec_p(char **scur, int *written, conv_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_f(char **scur, int *written, conv_t *mods, va_list *args) {
+bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
   uint128_t bits = 0;
   int whole_part_len = 0;
   int sign = 0;
@@ -690,12 +686,6 @@ bool spec_f(char **scur, int *written, conv_t *mods, va_list *args) {
                      : flttostr(bufcur, bits, DOUBLE_MANTISSA_BITS,
                                 DOUBLE_EXPONENT_BITS, false, mods);
 
-    if (!s21_strchr(buf.d, '.') && mods->hash) {
-      bufcur = buf.d + s21_strlen(buf.d);
-      *bufcur++ = '.';
-      *bufcur = '\0';
-    }
-
     is_error = addwid(&buf, mods);
   }
 
@@ -713,6 +703,27 @@ bool spec_f(char **scur, int *written, conv_t *mods, va_list *args) {
   return is_error;
 }
 
+bool spec_n(char **scur, int *written, conv_t *mods, va_list *args) {
+  bool is_error = false;
+
+  if (mods->len == 'h') {
+    short *arg = va_arg(*args, short *);
+    *arg = (short)*written;
+  } else if (mods->len == 'l') {
+    long *arg = va_arg(*args, long *);
+    *arg = (long)*written;
+  } else if (mods->len == -1) {
+    int *arg = va_arg(*args, int *);
+    *arg = (int)*written;
+  } else {
+    is_error = true;
+  }
+
+  ++*scur;
+
+  return is_error;
+}
+
 void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
               const uint32_t expbits, const bool explicit_leading_bit,
               conv_t *mods) {
@@ -723,16 +734,20 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
   bool zero_inf_nan = false;
 
   if (ieee_exp == 0 && ieee_man == 0) {
-    *dst++ = '0';
+    *dst = '0';
     zero_inf_nan = true;
   } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man == 0) {
-    for (const char *inf = "inf"; *inf; ++dst, ++inf) {
-      *dst = *inf;
+    if (mods->spec == 'E' || mods->spec == 'G') {
+      s21_strcpy(dst, "INF");
+    } else {
+      s21_strcpy(dst, "inf");
     }
     zero_inf_nan = true;
   } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man != 0) {
-    for (const char *nan = "nan"; *nan; ++dst, ++nan) {
-      *dst = *nan;
+    if (mods->spec == 'E' || mods->spec == 'G') {
+      s21_strcpy(dst, "NAN");
+    } else {
+      s21_strcpy(dst, "nan");
     }
     zero_inf_nan = true;
   }
@@ -767,15 +782,62 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
       mpz_fdiv_2exp(&mpres, &mpman, e, prec);
     }
 
+    /* Hash Flag */
     if (mods->spec == 'f') {
       mpf_to_fltnot(dst, &mpres, prec);
+
+      if (mods->hash && !s21_strchr(dst, '.')) {
+        char *cur = dst + s21_strlen(dst);
+        *cur++ = '.';
+        *cur = '\0';
+      }
     } else if (mods->spec == 'e' || mods->spec == 'E') {
       mpf_to_scinot(dst, &mpres, prec, mods->spec == 'E');
+
+      if (mods->hash && !s21_strchr(dst, '.')) {
+        char *expstart = s21_strchr(dst, 'e');
+        char *expend = dst + s21_strlen(dst);
+
+        for (; expend >= expstart; --expend) {
+          *(expend + 1) = *expend;
+        }
+        *expstart = '.';
+      }
     } else if (mods->spec == 'g' || mods->spec == 'G') {
       if (prec > mpres.exp && mpres.exp >= -4) {
         mpf_to_fltnot(dst, &mpres, prec - 1 - mpres.exp);
+
+        if (mods->hash && !s21_strchr(dst, '.')) {
+          char *cur = dst + s21_strlen(dst);
+          *cur++ = '.';
+          *cur = '\0';
+        } else if (!mods->hash && s21_strchr(dst, '.')) {
+          char *cur = dst + s21_strlen(dst) - 1;
+
+          for (; *cur == '0'; --cur) {
+          }
+
+          *(cur + (*cur != '.')) = '\0';
+        }
       } else {
         mpf_to_scinot(dst, &mpres, prec - 1, mods->spec == 'G');
+
+        char *expstart = s21_strchr(dst, 'e');
+        char *expend = dst + s21_strlen(dst);
+
+        if (mods->hash && !s21_strchr(dst, '.')) {
+          for (; expend >= expstart; --expend) {
+            *(expend + 1) = *expend;
+          }
+          *expstart = '.';
+        } else if (!mods->hash && s21_strchr(dst, '.')) {
+          char *frac = expstart - 1;
+
+          for (; *frac == '0'; --frac) {
+          }
+
+          *(frac + (*frac != '.')) = '\0';
+        }
       }
     }
 

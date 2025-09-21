@@ -4,8 +4,8 @@
 #include <check.h>
 #include <stdlib.h>
 
-#include "../../include/s21_bonus.h"
-#include "../../include/s21_std.h"
+#include "s21_bonus.h"
+#include "s21_std.h"
 
 Suite *suite_s21_to_upper_test(void);
 Suite *suite_s21_to_lower_test(void);

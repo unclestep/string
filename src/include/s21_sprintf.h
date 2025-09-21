@@ -35,10 +35,8 @@ bool spec_di(char **scur, int *written, conv_t *mods, va_list *args);
 bool spec_o(char **scur, int *written, conv_t *mods, va_list *args);
 bool spec_xX(char **scur, int *written, conv_t *mods, va_list *args);
 bool spec_u(char **scur, int *written, conv_t *mods, va_list *args);
-// bool spec_f(char **scur, int *written, conv_t *mods, va_list *args);
-// bool spec_eE(char **scur, int *written, conv_t *mods, va_list *args);
-// bool spec_gG(char **scur, int *written, conv_t *mods, va_list *args);
-// bool spec_n(char **scur, int *written, conv_t *mods, va_list *args);
+bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args);
+bool spec_n(char **scur, int *written, conv_t *mods, va_list *args);
 bool spec_p(char **scur, int *written, conv_t *mods, va_list *args);
 
 #endif

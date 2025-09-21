@@ -1,4 +1,4 @@
-#include "../include/s21_std.h"
+#include "s21_std.h"
 
 char *s21_strncat(char *dest, const char *src, s21_size_t n) {
   char *dcur = dest;

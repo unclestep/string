@@ -3,11 +3,25 @@
 
 #include <check.h>
 #include <limits.h>
-#include <string.h>
-#include <unistd.h>
+#include <locale.h>
+#include <stdio.h>
 
-#include "../../include/s21_sprintf.h"
-#include "../../include/s21_std.h"
+#include "s21_sprintf.h"
+#include "s21_std.h"
+
+#define LOCALE "en_US.UTF-8"
+
+TCase *case_s21_sprintf_c(void);
+TCase *case_s21_sprintf_s(void);
+TCase *case_s21_sprintf_di(void);
+TCase *case_s21_sprintf_o(void);
+TCase *case_s21_sprintf_x(void);
+TCase *case_s21_sprintf_u(void);
+// TCase *case_s21_sprintf_f(void);
+// TCase *case_s21_sprintf_e(void);
+// TCase *case_s21_sprintf_g(void);
+// TCase *case_s21_sprintf_n(void);
+TCase *case_s21_sprintf_p(void);
 
 Suite *suite_s21_sprintf_test(void);
 

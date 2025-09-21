@@ -1,4 +1,4 @@
-#include "../include/s21_gmp.h"
+#include "s21_gmp.h"
 
 /* Arithmetic Functions */
 #ifdef USE_GCC_BUILTINS

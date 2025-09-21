@@ -1,4 +1,4 @@
-#include "../include/s21_sprintf.h"
+#include "s21_sprintf.h"
 
 int intlen(long long i) {
   int intlen = 1;

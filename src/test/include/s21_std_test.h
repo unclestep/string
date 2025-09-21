@@ -4,8 +4,8 @@
 #include <check.h>
 #include <string.h>
 
-#include "../../include/s21_defines.h"
-#include "../../include/s21_std.h"
+#include "s21_defines.h"
+#include "s21_std.h"
 
 Suite *suite_s21_memchr_test(void);
 Suite *suite_s21_memcmp_test(void);

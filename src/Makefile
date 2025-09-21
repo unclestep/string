@@ -10,13 +10,15 @@ BUILD_DIR = build
 TARGET = s21_string
 TARGET_LIB = $(TARGET).a
 
-INC = $(TARGET).h 
+INC = include
 STD = std
 SPRINTF = sprintf
 SSCANF =  sscanf
 BONUS = bonus
 GMP = gmp
+
 TEST = test
+TINC = $(TEST)/include
 
 SRCS = $(wildcard $(STD)/*.c) \
        $(wildcard $(SPRINTF)/*.c) \
@@ -36,10 +38,10 @@ $(TARGET_LIB): $(OBJS)
 
 $(BUILD_DIR)/%.o: %.c
 	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c -I$(INC) -I$(TINC) $< -o $@
 
 test: clean $(TARGET_LIB) $(TEST_OBJS)
-	gcc $(CFLAGS) --coverage -o $(BUILD_DIR)/$(TEST)/$(TEST).out $(SRCS) $(TEST_OBJS) $(LIBS)
+	gcc $(CFLAGS) --coverage -I$(INC) -I$(TINC) -o $(BUILD_DIR)/$(TEST)/$(TEST).out $(SRCS) $(TEST_OBJS) $(LIBS)
 	./$(BUILD_DIR)/$(TEST)/$(TEST).out
 
 gcov_report: test

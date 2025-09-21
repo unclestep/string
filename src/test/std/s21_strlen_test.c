@@ -1,4 +1,4 @@
-#include "../include/s21_std_test.h"
+#include "s21_std_test.h"
 
 START_TEST(s21_strlen_empty_init) {
   const char str[21] = "\0";

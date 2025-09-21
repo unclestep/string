@@ -1,4 +1,4 @@
-#include "../include/s21_gmp_test.h"
+#include "s21_gmp_test.h"
 
 START_TEST(mpz_msb_all_ind) {
   mpz_t op;

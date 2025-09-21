@@ -1,4 +1,4 @@
-#include "../include/s21_std_test.h"
+#include "s21_std_test.h"
 
 START_TEST(s21_strncmp_equal_n_true) {
   const char *str1 = "abcdef";
