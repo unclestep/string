@@ -649,6 +649,8 @@ bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
     s21_memcpy(&bits, &arg, sizeof(long double));
     whole_part_len = fabsl(arg) ? floorl(log10l(fabsl(arg))) + 1 : 0;
     sign = arg < 0 || mods->space || mods->plus ? 1 : 0;
+    printf("Long Double Value: %Lf\nWhole Part Length: %d\n\n", arg,
+           whole_part_len);
 
   } else {
     double arg = va_arg(*args, double);
@@ -755,7 +757,7 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
   if (!zero_inf_nan) {
     /* f = m * 2^e */
     int32_t e = 0;
-    uint64_t m = 0;
+    uint128_t m = 0;
 
     if (explicit_leading_bit) {
       e = ieee_exp == 0 ? 1 - bias - manbits + 1
@@ -763,12 +765,26 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
       m = ieee_man;
     } else {
       e = ieee_exp == 0 ? 1 - bias - manbits : ieee_exp - bias - manbits;
-      m = (1ULL << manbits) | ieee_man;
+      m = ieee_exp == 0 ? ieee_man : (ONE << manbits) | ieee_man;
     }
+
+    long long unsigned lower = (long long unsigned)m;
+    long long unsigned upper = (long long unsigned)(m - (uint128_t)lower);
 
     mpf_t mpres;
     mpz_t mpman;
-    mpf_init(&mpres), mpz_init_set_ull(&mpman, m);
+    mpf_init(&mpres);
+    mpz_init_set_ull(&mpman, lower);
+    if (upper) {
+      mpz_realloc(&mpman, 2);
+      mpman.size = 2;
+      mpman.d[1] = upper;
+    }
+    if (mods->len == 'L') {
+      printf("Man: %d\nLower: %d\nUpper: %d\n\n", m == 0, lower == 0,
+             upper == 0);
+    }
+    printf("Lower: %llu\nExp: %d\n\n", lower, ieee_exp);
 
     int prec = mods->prec < 0 ? 6 : mods->prec;
     if (!prec && mods->spec == 'g') prec = 1;
@@ -782,9 +798,17 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
       mpz_fdiv_2exp(&mpres, &mpman, e, prec);
     }
 
+    if (mods->len == 'L') {
+      printf("Long double:\nexp: %d\nfig: %d\n\n", mpres.exp, mpres.fig);
+    }
+
     /* Hash Flag */
     if (mods->spec == 'f') {
       mpf_to_fltnot(dst, &mpres, prec);
+
+      if (mods->len == 'L') {
+        printf("Long double prefinal: %s\n\n", dst);
+      }
 
       if (mods->hash && !s21_strchr(dst, '.')) {
         char *cur = dst + s21_strlen(dst);
