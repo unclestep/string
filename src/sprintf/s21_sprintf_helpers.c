@@ -61,7 +61,12 @@ bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz) {
 }
 
 bool addwid(sc_t *arr, conv_t *mods) {
-  char widfil = mods->zero && mods->prec < 0 ? '0' : ' ';
+  // char widfil =
+  //     mods->zero && ((mods->prec < 0 && s21_strchr("dioxXu", mods->spec)) ||
+  //                    s21_strchr("feEgG", mods->spec))
+  //         ? '0'
+  //         : ' ';
+  char widfil = mods->zero ? '0' : ' ';
   char *sign = s21_strpbrk(arr->d, "+- ");
 
   int widdif = mods->wid - arr->size > 0 ? mods->wid - arr->size : 0;

@@ -115,6 +115,11 @@ void adjust_convmods(conv_t *mods) {
       s21_strchr("cs", mods->spec)) {
     mods->zero = false;
   }
+
+  if (mods->wid < 0) {
+    mods->wid = mods->wid != INT_MIN ? abs(mods->wid) : INT_MAX;
+    mods->minus = true;
+  }
 }
 
 bool convert(char **scur, int *written, conv_t *mods, va_list *args) {
@@ -276,7 +281,7 @@ bool spec_di(char **scur, int *written, conv_t *mods, va_list *args) {
   int arglen = !arg && !mods->prec ? 0 : intlen(arg);
   int precdif = prec - arglen > 0 ? prec - arglen : 0;
   int sign = arg < 0 || mods->plus || mods->space ? 1 : 0;
-  int widdif = mods->wid - (arglen + precdif + sign) > 0
+  int widdif = mods->wid > (arglen + precdif + sign)
                    ? mods->wid - (arglen + precdif + sign)
                    : 0;
   int needed_alloc = arglen + precdif + sign + widdif + 1;
@@ -371,7 +376,7 @@ bool spec_o(char **scur, int *written, conv_t *mods, va_list *args) {
   int precdif =
       (prec - arglen > 0) || (!arg && mods->prec) ? prec - arglen : mods->hash;
   int widdif =
-      mods->wid - (arglen + precdif) > 0 ? mods->wid - (arglen + precdif) : 0;
+      mods->wid > (arglen + precdif) ? mods->wid - (arglen + precdif) : 0;
   int needed_alloc = arglen + precdif + widdif + 1;
   buf.alloc = needed_alloc;
   buf.size = precdif + arglen;
@@ -442,7 +447,7 @@ bool spec_xX(char **scur, int *written, conv_t *mods, va_list *args) {
   int prefix = mods->hash && arg ? 2 : 0;
   int prec = mods->prec < 0 ? 1 : mods->prec;
   int precdif = prec - arglen > 0 ? prec - arglen : 0;
-  int widdif = mods->wid - (arglen + precdif + prefix) > 0
+  int widdif = mods->wid > (arglen + precdif + prefix)
                    ? mods->wid - (arglen + precdif + prefix)
                    : 0;
   int needed_alloc = arglen + precdif + widdif + prefix + 1;
@@ -503,7 +508,7 @@ bool spec_u(char **scur, int *written, conv_t *mods, va_list *args) {
   int arglen = !arg && !mods->prec ? 0 : uintlen(arg);
   int precdif = prec - arglen > 0 ? prec - arglen : 0;
   int widdif =
-      mods->wid - (arglen + precdif) > 0 ? mods->wid - (arglen + precdif) : 0;
+      mods->wid > (arglen + precdif) ? mods->wid - (arglen + precdif) : 0;
   int needed_alloc = arglen + precdif + widdif + 1;
 
   buf.alloc = needed_alloc;
@@ -617,28 +622,52 @@ bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
   uint128_t bits = 0;
   int whole_part_len = 0;
   int sign = 0;
+  bool is_negative = false;
+  bool is_inf = false;
+  bool is_nan = false;
   bool is_error = false;
 
   if (mods->len == 'L') {
     long double arg = va_arg(*args, long double);
     s21_memcpy(&bits, &arg, sizeof(long double));
-    whole_part_len = fabsl(arg) ? floorl(log10l(fabsl(arg))) + 1 : 0;
-    sign = arg < 0 || mods->space || mods->plus ? 1 : 0;
-    printf("Long Double Value: %Lf\nWhole Part Length: %d\n\n", arg,
-           whole_part_len);
+    if (!isinf(arg) && !isnan(arg)) {
+      whole_part_len = fabsl(arg) >= 1 ? floorl(log10l(fabsl(arg))) + 1 : 1;
+    } else {
+      whole_part_len = 3;
+      is_inf = isinf(arg);
+      is_nan = isnan(arg);
+      mods->zero = false;
+    }
+    is_negative = arg < 0;
+    sign = is_negative || mods->space || mods->plus ? 1 : 0;
 
   } else {
     double arg = va_arg(*args, double);
     s21_memcpy(&bits, &arg, sizeof(double));
-    whole_part_len = fabs(arg) ? floor(log10(fabs(arg))) + 1 : 0;
-    sign = arg < 0 || mods->space || mods->plus ? 1 : 0;
+    if (!isinf(arg) && !isnan(arg)) {
+      whole_part_len = fabsl(arg) >= 1 ? floorl(log10l(fabsl(arg))) + 1 : 1;
+    } else {
+      whole_part_len = 3;
+      is_inf = isinf(arg);
+      is_nan = isnan(arg);
+      mods->zero = false;
+    }
+    is_negative = arg < 0;
+    sign = is_negative || (!is_nan && mods->space) || (!is_nan && mods->plus)
+               ? 1
+               : 0;
   }
+#if defined(__linux__)
+  if (is_nan && (mods->space || mods->plus)) {
+    sign = 1;
+  }
+#endif
 
   int prec = mods->prec < 0 ? 6 : mods->prec;
   int dot = prec || (!prec && mods->hash) ? 1 : 0;
-  int arglen = whole_part_len + prec + dot + sign;
-  int wid = mods->wid < 0 ? 0 : mods->wid;
-  int widdif = wid - arglen < 0 ? 0 : wid - arglen;
+  int arglen = !is_inf && !is_nan ? whole_part_len + prec + dot + sign
+                                  : whole_part_len + sign;
+  int widdif = mods->wid > arglen ? mods->wid - arglen : 0;
   int needed_alloc = arglen + widdif + 1;
 
   sc_t buf = {0};
@@ -650,13 +679,23 @@ bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
   if (!is_error) {
     char *bufcur = buf.d;
 
-    if (mods->space) {
+#if defined(__APPLE__)
+    if (is_negative) {
+      *bufcur++ = '-';
+    } else if (!is_nan && mods->space) {
+      *bufcur++ = ' ';
+    } else if (!is_nan && mods->plus) {
+      *bufcur++ = '+';
+    }
+#elif defined(__linux__)
+    if (is_negative) {
+      *bufcur++ = '-';
+    } else if (mods->space) {
       *bufcur++ = ' ';
     } else if (mods->plus) {
       *bufcur++ = '+';
-    } else if (sign) {
-      *bufcur++ = '-';
     }
+#endif
 
     mods->len == 'L'
         ? flttostr(bufcur, bits, LDOUBLE_MANTISSA_BITS, LDOUBLE_EXPONENT_BITS,
@@ -711,16 +750,7 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
       (uint32_t)((bits >> manbits) & ((ONE << expbits) - 1));
   bool zero_inf_nan = false;
 
-  printf("Long Double Byte Size: %lu\n\n", sizeof(long double));
-  printf("Double Byte Size: %lu\n\n", sizeof(double));
-  printf("__LDBL_MANT_DIG__ = %d\n", __LDBL_MANT_DIG__);
-  printf("__LDBL_MAX_EXP__  = %d\n", __LDBL_MAX_EXP__);
-  fflush(stdout);
-
-  if (ieee_exp == 0 && ieee_man == 0) {
-    *dst = '0';
-    zero_inf_nan = true;
-  } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man == 0) {
+  if (ieee_exp == ((1U << expbits) - 1U) && ieee_man == 0) {
     if (mods->spec == 'E' || mods->spec == 'G') {
       s21_strcpy(dst, "INF");
     } else {
@@ -762,11 +792,8 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
       mpman.size = 2;
       mpman.d[1] = upper;
     }
-    if (mods->len == 'L') {
-      printf("Man: %d\nLower: %d\nUpper: %d\n\n", m == 0, lower == 0,
-             upper == 0);
-    }
-    printf("Lower: %llu\nExp: %d\n\n", lower, e);
+    printf("Before calc:\nLower: %llu\nUpper: %llu\nExp: %d\n", lower, upper,
+           e);
 
     int prec = mods->prec < 0 ? 6 : mods->prec;
     if (!prec && mods->spec == 'g') prec = 1;
@@ -780,15 +807,13 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
       mpz_fdiv_2exp(&mpres, &mpman, e, prec);
     }
 
-    printf("exp: %d\nfig: %d\n\n", mpres.exp, mpres.fig);
+    printf("After calc:\nExp: %d\nFig: %d\n", mpres.exp, mpres.fig);
 
-    /* Hash Flag */
+    /* Conversion to string */
     if (mods->spec == 'f') {
       mpf_to_fltnot(dst, &mpres, prec);
-
-      if (mods->len == 'L') {
-        printf("Long double prefinal: %s\n\n", dst);
-      }
+      printf("After Conv Value's:\nExp: %d\nFig: %d\n", mpres.exp, mpres.fig);
+      printf("After fltnot value: %s\n\n", dst);
 
       if (mods->hash && !s21_strchr(dst, '.')) {
         char *cur = dst + s21_strlen(dst);

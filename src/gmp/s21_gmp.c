@@ -208,7 +208,7 @@ void mpz_fdiv_2exp(mpf_t *res, const mpz_t *val, int exp, int p) {
 
   mpz_idiv_2exp(&res->man, &rem, val, exp);
   res->fig = mpz_exactsizeinbase10(&res->man);
-  res->exp = res->man.size ? res->fig - 1 : -1;
+  res->exp = res->man.size || !val->size ? res->fig - 1 : -1;
 
   bool is_signif = res->man.size;
   bool was_divided = true;
@@ -278,15 +278,13 @@ void mpf_rint(mpf_t *val, int p) {
   }
 
   if (guard > 5 || (guard == 5 && (sticky || mpz_odd(&val->man)))) {
-    mpz_div10(&quo, &rem, &val->man);
-
-    if (rem.d[0] == 9) {
-      val->exp += 1;
-
-      if (val->exp > 0) val->fig += 1;
-    }
-
+    int before = mpz_exactsizeinbase10(&val->man);
     mpz_add_ull(&val->man, &val->man, 1);
+    int after = mpz_exactsizeinbase10(&val->man);
+    if (after > before) {
+      ++val->exp;
+      if (val->exp > 0) ++val->fig;
+    }
   }
 
   mpz_clear(&quo), mpz_clear(&rem);
