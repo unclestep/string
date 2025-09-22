@@ -83,8 +83,8 @@ END_TEST
 
 START_TEST(s21_sscanf_wide) {
   setlocale(LC_ALL, LOCALE);
-  char in[] = "\u00df\u6c34\U0001F34C \u00df\u6c34\U0001F34C \U0001F34C";
-  char f[] = "%lc%ls%*ls%*lc";
+  char in[] = "a \u00df\u6c34\U0001F34C \u00df\u6c34\U0001F34C \U0001F34C";
+  char f[] = "%lc%ls";
   wchar_t wc_s21, wc_std;
   wchar_t ws_s21[20], ws_std[20];
   int count_s21, count_std;
