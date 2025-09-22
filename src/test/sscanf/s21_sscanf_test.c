@@ -90,6 +90,8 @@ START_TEST(s21_sscanf_wide) {
   int count_s21, count_std;
   count_s21 = s21_sscanf(in, f, &wc_s21, ws_s21);
   count_std = sscanf(in, f, &wc_std, ws_std);
+  printf("ws_s21: %ls\nws_std: %ls\n\n", ws_s21, ws_std);
+  fflush(stdout);
   ck_assert_int_eq(count_s21, count_std);
   ck_assert(wcsncmp(&wc_s21, &wc_std, 1) == 0);
   ck_assert(wcscmp(ws_s21, ws_std) == 0);

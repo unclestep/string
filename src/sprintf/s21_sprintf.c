@@ -351,10 +351,8 @@ bool spec_o(char **scur, int *written, conv_t *mods, va_list *args) {
   }
 
   int arglen = 0;
-
-  char *tmp = malloc(32);
+  char tmp[32] = {0};
   char *tcur = tmp;
-  is_error = !tmp;
 
   if (!is_error) {
     if (!arg && mods->prec != 0) {
@@ -404,10 +402,6 @@ bool spec_o(char **scur, int *written, conv_t *mods, va_list *args) {
     free(buf.d);
   }
 
-  if (tmp) {
-    free(tmp);
-  }
-
   return is_error;
 }
 
@@ -428,26 +422,22 @@ bool spec_xX(char **scur, int *written, conv_t *mods, va_list *args) {
   }
 
   int arglen = 0;
-
-  char *tmp = malloc(32);
+  char tmp[32] = {0};
   char *tcur = tmp;
-  is_error = !tmp;
 
-  if (!is_error) {
-    char *alphabet =
-        mods->spec == 'x' ? "0123456789abcdef" : "0123456789ABCDEF";
+  const char *alphabet =
+      mods->spec == 'x' ? "0123456789abcdef" : "0123456789ABCDEF";
 
-    if (!arg && mods->prec != 0) {
-      *tcur++ = '0';
-      arglen = 1;
-    }
-
-    unsigned long decarg = arg;
-    for (; decarg; decarg /= 16, ++tcur, ++arglen) {
-      *tcur = alphabet[decarg % 16];
-    }
-    *tcur = '\0';
+  if (!arg && mods->prec != 0) {
+    *tcur++ = '0';
+    arglen = 1;
   }
+
+  unsigned long decarg = arg;
+  for (; decarg; decarg /= 16, ++tcur, ++arglen) {
+    *tcur = alphabet[decarg % 16];
+  }
+  *tcur = '\0';
 
   int prefix = mods->hash && arg ? 2 : 0;
   int prec = mods->prec < 0 ? 1 : mods->prec;
@@ -488,10 +478,6 @@ bool spec_xX(char **scur, int *written, conv_t *mods, va_list *args) {
 
   if (buf.d) {
     free(buf.d);
-  }
-
-  if (tmp) {
-    free(tmp);
   }
 
   return is_error;
@@ -567,72 +553,61 @@ bool spec_u(char **scur, int *written, conv_t *mods, va_list *args) {
 bool spec_p(char **scur, int *written, conv_t *mods, va_list *args) {
   uintptr_t arg = (uintptr_t)va_arg(*args, void *);
 
-  bool is_error = false;
   int arglen = 0;
-
-  char *tmp = malloc(32);
+  char tmp[32] = {0};
   char *tcur = tmp;
-  is_error = !tmp;
 
-  if (!is_error) {
-    char *alphabet = "0123456789abcdef";
+  bool is_error = false;
 
-    unsigned long decarg = arg;
+  const char *alphabet = "0123456789abcdef";
+  unsigned long decarg = arg;
 
-    if (!decarg) {
+  if (!arg) {
 #if defined(__APPLE__)
-      *tcur++ = '0';
+    *tcur++ = '0';
+    *tcur++ = 'x';
+    *tcur++ = '0';
+    arglen = 3;
+#elif defined(__linux__) && !defined(__GLIBC__)
+    *tcur++ = '0';
+    arglen = 1;
+#elif defined(__linux__) && defined(__GLIBC__)
+    *tcur++ = ')';
+    *tcur++ = 'l';
+    *tcur++ = 'i';
+    *tcur++ = 'n';
+    *tcur++ = '(';
+    arglen = 5;
 #endif
+  }
 
-#if defined(__linux__)
-      *tcur++ = ')';
-      *tcur++ = 'l';
-      *tcur++ = 'i';
-      *tcur++ = 'n';
-      *tcur++ = '(';
-      arglen += 2;
-#endif
-      arglen += 1;
-    }
+  for (; decarg; decarg /= 16, ++tcur, ++arglen) {
+    *tcur = alphabet[decarg % 16];
+  }
 
-    for (; decarg; decarg /= 16, ++tcur, ++arglen) {
-      *tcur = alphabet[decarg % 16];
-    }
-    *tcur = '\0';
+  if (arg) {
+    *tcur++ = 'x';
+    *tcur++ = '0';
     arglen += 2;
+  }
 
-    int widdif = mods->wid - arglen > 0 ? mods->wid - arglen : 0;
-    *written += arglen + widdif;
+  int widdif = mods->wid - arglen > 0 ? mods->wid - arglen : 0;
+  *written += arglen + widdif;
 
-    if (widdif && !mods->minus) {
-      for (int i = 0; i < widdif; ++i, ++*scur) {
-        **scur = ' ';
-      }
-    }
-
-    if (arg) {
-      *(*scur)++ = '0';
-      *(*scur)++ = 'x';
-    } else {
-#if defined(__APPLE__)
-      *(*scur)++ = '0';
-      *(*scur)++ = 'x';
-#endif
-    }
-
-    for (tcur = !*tcur ? tcur - 1 : tcur; tcur >= tmp; --tcur, ++*scur) {
-      **scur = *tcur;
-    }
-
-    if (widdif && mods->minus) {
-      for (int i = 0; i < widdif; ++i, ++*scur) {
-        **scur = ' ';
-      }
+  if (widdif && !mods->minus) {
+    for (int i = 0; i < widdif; ++i, ++*scur) {
+      **scur = ' ';
     }
   }
 
-  if (tmp) {
-    free(tmp);
+  for (tcur = tmp + arglen - 1; tcur >= tmp; --tcur, ++*scur) {
+    **scur = *tcur;
+  }
+
+  if (widdif && mods->minus) {
+    for (int i = 0; i < widdif; ++i, ++*scur) {
+      **scur = ' ';
+    }
   }
 
   return is_error;
@@ -683,10 +658,11 @@ bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
       *bufcur++ = '-';
     }
 
-    mods->len == 'L' ? flttostr(bufcur, bits, LDOUBLE_MANTISSA_BITS,
-                                LDOUBLE_EXPONENT_BITS, true, mods)
-                     : flttostr(bufcur, bits, DOUBLE_MANTISSA_BITS,
-                                DOUBLE_EXPONENT_BITS, false, mods);
+    mods->len == 'L'
+        ? flttostr(bufcur, bits, LDOUBLE_MANTISSA_BITS, LDOUBLE_EXPONENT_BITS,
+                   LDOUBLE_EXPLICIT_LEADING_BIT, mods)
+        : flttostr(bufcur, bits, DOUBLE_MANTISSA_BITS, DOUBLE_EXPONENT_BITS,
+                   false, mods);
 
     is_error = addwid(&buf, mods);
   }
@@ -734,6 +710,12 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
   const uint32_t ieee_exp =
       (uint32_t)((bits >> manbits) & ((ONE << expbits) - 1));
   bool zero_inf_nan = false;
+
+  printf("Long Double Byte Size: %lu\n\n", sizeof(long double));
+  printf("Double Byte Size: %lu\n\n", sizeof(double));
+  printf("__LDBL_MANT_DIG__ = %d\n", __LDBL_MANT_DIG__);
+  printf("__LDBL_MAX_EXP__  = %d\n", __LDBL_MAX_EXP__);
+  fflush(stdout);
 
   if (ieee_exp == 0 && ieee_man == 0) {
     *dst = '0';
@@ -784,7 +766,7 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
       printf("Man: %d\nLower: %d\nUpper: %d\n\n", m == 0, lower == 0,
              upper == 0);
     }
-    printf("Lower: %llu\nExp: %d\n\n", lower, ieee_exp);
+    printf("Lower: %llu\nExp: %d\n\n", lower, e);
 
     int prec = mods->prec < 0 ? 6 : mods->prec;
     if (!prec && mods->spec == 'g') prec = 1;
@@ -798,9 +780,7 @@ void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
       mpz_fdiv_2exp(&mpres, &mpman, e, prec);
     }
 
-    if (mods->len == 'L') {
-      printf("Long double:\nexp: %d\nfig: %d\n\n", mpres.exp, mpres.fig);
-    }
+    printf("exp: %d\nfig: %d\n\n", mpres.exp, mpres.fig);
 
     /* Hash Flag */
     if (mods->spec == 'f') {

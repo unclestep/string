@@ -15,8 +15,22 @@ typedef __uint128_t uint128_t;
 #define LOG10_2 0.30102999566
 
 /* s21_sprintf */
+#if defined(__APPLE__)
+#define LDOUBLE_MANTISSA_BITS 52
+#define LDOUBLE_EXPONENT_BITS 11
+#define LDOUBLE_EXPLICIT_LEADING_BIT 0
+
+#elif defined(__linux__) && (defined(__x86_64__) || defined(__amd64__))
 #define LDOUBLE_MANTISSA_BITS 64
 #define LDOUBLE_EXPONENT_BITS 15
+#define LDOUBLE_EXPLICIT_LEADING_BIT 1
+
+#elif defined(__linux__) && defined(__aarch64__)
+#define LDOUBLE_MANTISSA_BITS 112
+#define LDOUBLE_EXPONENT_BITS 15
+#define LDOUBLE_EXPLICIT_LEADING_BIT 0
+#endif
+
 #define DOUBLE_MANTISSA_BITS 52
 #define DOUBLE_EXPONENT_BITS 11
 

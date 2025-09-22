@@ -1,0 +1,16 @@
+FROM alpine:latest
+
+RUN apk add --no-cache \
+    build-base \
+    git \
+    check-dev \
+    musl-locales \
+    subunit-dev \
+    && rm -rf /var/cache/apk/*
+
+ENV LANGUAGE=en_US.UTF-8
+
+WORKDIR /s21_string
+COPY . .
+
+CMD ["make", "test"]

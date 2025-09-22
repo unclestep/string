@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "s21_std_test.h"
 
 START_TEST(s21_strerror_all) {
