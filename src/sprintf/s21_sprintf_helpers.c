@@ -57,6 +57,8 @@ bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz) {
     }
   }
 
+  mb->d[mb->size] = '\0';
+
   return is_error;
 }
 
@@ -77,13 +79,13 @@ bool addsign(sc_t *arr, conv_t *mods, bool is_negative) {
 
 bool addwid(sc_t *arr, conv_t *mods) {
   char widfil = mods->zero ? '0' : ' ';
-  char *sign = s21_strpbrk(arr->d, "+- ");
 
   int widdif = mods->wid - arr->size > 0 ? mods->wid - arr->size : 0;
   s21_size_t new_alloc = arr->size + widdif + 1;
 
   bool is_error = false;
-  bool is_sign = sign && widfil == '0';
+  char sign = arr->d[0];
+  bool is_sign = s21_strchr("+- ", sign) && mods->zero;
 
   if (widdif > 0) {
     if (new_alloc > arr->alloc) {
@@ -91,7 +93,7 @@ bool addwid(sc_t *arr, conv_t *mods) {
       is_error = !buf;
 
       if (buf && !mods->minus) {
-        if (is_sign) *buf = *sign;
+        if (is_sign) *buf = sign;
         s21_memset(buf + is_sign, widfil, widdif);
         s21_memcpy(buf + is_sign + widdif, arr->d + is_sign,
                    arr->size - is_sign + 1);
@@ -220,7 +222,7 @@ void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
 
       if (mods->hash && !s21_strchr(dst->d, '.')) {
         char *expstart = s21_strchr(dst->d, 'e');
-        char *expend = dst->d + s21_strlen(dst->d);
+        char *expend = dst->d + dst->size;
 
         for (; expend >= expstart; --expend) {
           *(expend + 1) = *expend;
@@ -233,35 +235,46 @@ void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
         mpf_to_fltnot(dst, &mpres, prec - 1 - mpres.exp);
 
         if (mods->hash && !s21_strchr(dst->d, '.')) {
-          char *cur = dst->d + s21_strlen(dst->d);
-          *cur++ = '.';
-          *cur = '\0';
+          dst->d[dst->size++] = '.';
+          dst->d[dst->size] = '\0';
         } else if (!mods->hash && s21_strchr(dst->d, '.')) {
-          char *cur = dst->d + s21_strlen(dst->d) - 1;
+          char *cur = dst->d + dst->size - 1;
 
-          for (; *cur == '0'; --cur) {
+          for (; *cur == '0'; --cur, --dst->size) {
           }
 
-          *(cur + (*cur != '.')) = '\0';
+          if (*cur == '.') {
+            *cur = '\0';
+            --dst->size;
+          } else {
+            *(cur + 1) = '\0';
+          }
         }
       } else {
         mpf_to_scinot(dst, &mpres, prec - 1, mods->spec == 'G');
 
         char *expstart = s21_strchr(dst->d, 'e');
-        char *expend = dst->d + s21_strlen(dst->d);
+        char *expend = dst->d + dst->size;
 
         if (mods->hash && !s21_strchr(dst->d, '.')) {
           for (; expend >= expstart; --expend) {
             *(expend + 1) = *expend;
           }
           *expstart = '.';
+          dst->size += 1;
         } else if (!mods->hash && s21_strchr(dst->d, '.')) {
           char *frac = expstart - 1;
 
-          for (; *frac == '0'; --frac) {
+          for (; *frac == '0'; --frac, --dst->size) {
           }
 
-          *(frac + (*frac != '.')) = '\0';
+          if (*frac == '.') {
+            --dst->size;
+          } else {
+            ++frac;
+          }
+
+          s21_strcpy(frac, expstart);
         }
       }
     }

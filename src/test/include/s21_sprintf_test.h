@@ -18,7 +18,7 @@ TCase *case_s21_sprintf_o(void);
 TCase *case_s21_sprintf_x(void);
 TCase *case_s21_sprintf_u(void);
 TCase *case_s21_sprintf_f(void);
-// TCase *case_s21_sprintf_e(void);
+TCase *case_s21_sprintf_e(void);
 // TCase *case_s21_sprintf_g(void);
 // TCase *case_s21_sprintf_n(void);
 TCase *case_s21_sprintf_p(void);

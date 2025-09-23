@@ -229,7 +229,7 @@ bool spec_s(char **scur, int *written, conv_t *mods, va_list *args) {
     }
     szwnt += 1;
 
-    buf.alloc = szwnt * MB_CUR_MAX * 3;
+    buf.alloc = szwnt * MB_CUR_MAX * 3 + 1;
     buf.d = malloc(buf.alloc);
     is_error = !buf.d;
 
@@ -238,17 +238,18 @@ bool spec_s(char **scur, int *written, conv_t *mods, va_list *args) {
     }
   } else {
     char *ca = va_arg(*args, char *);
-    szwnt = s21_strlen(ca) + 1;
+    szwnt = s21_strlen(ca);
 
-    buf.alloc = szwnt * 3;
+    buf.alloc = szwnt * 3 + 1;
     buf.d = malloc(buf.alloc);
     is_error = !buf.d;
 
     if (!is_error) {
-      for (s21_size_t i = 0; i < szwnt && (int)i != mods->prec; ++i) {
+      for (s21_size_t i = 0; i < szwnt && (int)i != mods->prec;
+           ++i, ++buf.size) {
         buf.d[i] = ca[i];
-        buf.size = buf.d[i] ? buf.size + 1 : buf.size;
       }
+      buf.d[buf.size] = '\0';
     }
   }
 
