@@ -389,7 +389,7 @@ void mpz_bitshiftl(mpz_t *res, const mpz_t *val, mp_size_t shift) {
 
 /* Conversion Functions */
 /* NOTE: Use mpz_sizeinbase10 to properly allocate the memory for the string */
-void mpf_to_fltnot(char *dst, mpf_t *src, int p) {
+void mpf_to_fltnot(sc_t *dst, mpf_t *src, int p) {
   int wholes = src->exp >= 0 ? src->exp + 1 : 1;
 
   mpf_rint(src, wholes + p);
@@ -401,12 +401,17 @@ void mpf_to_fltnot(char *dst, mpf_t *src, int p) {
   int pdif = p > fracs ? p - fracs : 0;
 
   /* pdif > 0 for cases when src is whole but p > 0 (trailing zeros) */
-  int cur = wholes + p + (fracs > 0 || pdif > 0);
+  int len = wholes + p + ((fracs > 0 && p) || pdif > 0);
+  if (len + 1 + dst->size > dst->alloc) {
+    dst->d = realloc(dst->d, (len + 1 + dst->size) * 2);
+  }
+  dst->size += len;
+  char *cur = dst->d + dst->size;
 
-  dst[cur--] = '\0';
+  *cur-- = '\0';
 
   for (; pdif != 0; --pdif) {
-    dst[cur--] = '0';
+    *cur-- = '0';
   }
 
   mpz_t quo, rem;
@@ -414,10 +419,10 @@ void mpf_to_fltnot(char *dst, mpf_t *src, int p) {
 
   for (int fig = src->fig; fig > 0; --fig) {
     if (fig == wholes && p) {
-      dst[cur--] = '.';
+      *cur-- = '.';
     }
     mpz_div10(&quo, &rem, &quo);
-    dst[cur--] = rem.d[0] + '0';
+    *cur-- = rem.d[0] + '0';
   }
 
   mpz_clear(&quo), mpz_clear(&rem);
@@ -425,7 +430,7 @@ void mpf_to_fltnot(char *dst, mpf_t *src, int p) {
 
 /* NOTE: Use mpz_sizeinbase10 to properly allocate the memory for the string */
 /* NOTE: Argument p accepts the fractional precision */
-void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
+void mpf_to_scinot(sc_t *dst, mpf_t *src, int p, bool big_e) {
   src->exp >= 0 ? mpf_rint(src, p + 1) : mpf_rint(src, abs(src->exp) + p + 1);
 
   /* whole[1] + dot[1] + prec[p] + e[1] + e_sign[1] + e_len[up to 3] */
@@ -438,19 +443,24 @@ void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
   int pdif = p > fracs ? p - fracs : 0;
 
   /* fracs > 0 && p — case when there are trailing zero but p == 0 */
-  int cur = p + e_len + 3 + ((fracs > 0 && p) || pdif > 0);
+  int len = p + e_len + 3 + ((fracs > 0 && p) || pdif > 0);
+  if (len + 1 + dst->size > dst->alloc) {
+    dst->d = realloc(dst->d, (len + 1 + dst->size) * 2);
+  }
+  dst->size += len;
+  char *cur = dst->d + dst->size;
 
-  dst[cur--] = '\0';
+  *cur-- = '\0';
 
   for (int i = 0; i != e_len; ++i, e_val /= 10) {
-    dst[cur--] = e_val % 10 + '0';
+    *cur-- = e_val % 10 + '0';
   }
 
-  dst[cur--] = e_sign;
-  dst[cur--] = e;
+  *cur-- = e_sign;
+  *cur-- = e;
 
   for (; pdif != 0; --pdif) {
-    dst[cur--] = '0';
+    *cur-- = '0';
   }
 
   mpz_t quo, rem;
@@ -460,13 +470,13 @@ void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e) {
     mpz_div10(&quo, &rem, &quo);
     /* We have unnormalized number so we need to skip trailing zeros */
     if (f <= p) {
-      dst[cur--] = rem.d[0] + '0';
+      *cur-- = rem.d[0] + '0';
     }
   }
 
-  if (p) dst[cur--] = '.';
+  if (p) *cur-- = '.';
   mpz_div10(&quo, &rem, &quo);
-  dst[cur] = rem.d[0] + '0';
+  *cur-- = rem.d[0] + '0';
 
   mpz_clear(&quo), mpz_clear(&rem);
 }

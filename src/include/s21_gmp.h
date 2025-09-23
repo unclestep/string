@@ -190,8 +190,8 @@ static inline void mpz_erase(mpz_t *val) {
 int mpz_cmp(const mpz_t *val1, const mpz_t *val2);
 
 /* Conversion Functions */
-void mpf_to_fltnot(char *dst, mpf_t *src, int p);
-void mpf_to_scinot(char *dst, mpf_t *src, int p, bool big_e);
+void mpf_to_fltnot(sc_t *dst, mpf_t *src, int p);
+void mpf_to_scinot(sc_t *dst, mpf_t *src, int p, bool big_e);
 void mpz_to_mpf(mpf_t *dst, mpz_t *src);
 
 /* Arithmetic Functions */

@@ -628,87 +628,32 @@ bool spec_p(char **scur, int *written, conv_t *mods, va_list *args) {
 }
 
 bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
-  long double arg = 0;
+  sc_t buf = {0};
+  buf.alloc = 256;
+  buf.d = malloc(buf.alloc);
+
   uint128_t bits = 0;
-  int wholelen = 0;
   bool is_error = false;
 
   if (mods->len == 'L') {
     long double ldarg = va_arg(*args, long double);
     s21_memcpy(&bits, &ldarg, sizeof(long double));
-    arg = ldarg;
+    flttostr(&buf, bits, LDOUBLE_MANTISSA_BITS, LDOUBLE_EXPONENT_BITS,
+             LDOUBLE_EXPLICIT_LEADING_BIT, mods);
   } else {
     double darg = va_arg(*args, double);
     s21_memcpy(&bits, &darg, sizeof(double));
-    arg = darg;
+    flttostr(&buf, bits, DOUBLE_MANTISSA_BITS, DOUBLE_EXPONENT_BITS, false,
+             mods);
   }
 
-  if (!isinf(arg) && !isnan(arg)) {
-    wholelen = fabsl(arg) >= 1 ? floorl(log10l(fabsl(arg))) + 1 : 1;
-  } else {
-    wholelen = 3;
-    mods->zero = false;
+  addwid(&buf, mods);
+  printf("After addwid:\nsize = %lu\nstr = %s\n\n", buf.size, buf.d);
+
+  for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
+    **scur = buf.d[i];
   }
-
-#if defined(__APPLE__)
-  int sign =
-      arg < 0 || (!isnan(arg) && mods->space) || (!isnan(arg) && mods->plus)
-          ? 1
-          : 0;
-#elif defined(__linux__)
-  int sign = arg < 0 || mods->space || mods->plus ? 1 : 0;
-#endif
-
-  int exp = mods->spec == 'E' || mods->spec == 'e' ? 4 : 0;
-  int prec = mods->prec < 0 ? 6 : mods->prec;
-  int dot = prec || (!prec && mods->hash) ? 1 : 0;
-  int arglen = !isinf(arg) && !isnan(arg) ? wholelen + prec + dot + sign + exp
-                                          : wholelen + sign;
-  int widdif = mods->wid > arglen ? mods->wid - arglen : 0;
-  int needed_alloc = arglen + widdif + 1;
-
-  sc_t buf = {0};
-  buf.size = arglen;
-  buf.alloc = needed_alloc;
-  buf.d = malloc(needed_alloc);
-  is_error = !buf.d;
-
-  if (!is_error) {
-    char *bufcur = buf.d;
-
-#if defined(__APPLE__)
-    if (arg < 0) {
-      *bufcur++ = '-';
-    } else if (!isnan(arg) && mods->space) {
-      *bufcur++ = ' ';
-    } else if (!isnan(arg) && mods->plus) {
-      *bufcur++ = '+';
-    }
-#elif defined(__linux__)
-    if (arg < 0) {
-      *bufcur++ = '-';
-    } else if (mods->space) {
-      *bufcur++ = ' ';
-    } else if (mods->plus) {
-      *bufcur++ = '+';
-    }
-#endif
-
-    mods->len == 'L'
-        ? flttostr(bufcur, bits, LDOUBLE_MANTISSA_BITS, LDOUBLE_EXPONENT_BITS,
-                   LDOUBLE_EXPLICIT_LEADING_BIT, mods)
-        : flttostr(bufcur, bits, DOUBLE_MANTISSA_BITS, DOUBLE_EXPONENT_BITS,
-                   false, mods);
-
-    is_error = addwid(&buf, mods);
-  }
-
-  if (!is_error) {
-    for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
-      **scur = buf.d[i];
-    }
-    *written += buf.size;
-  }
+  *written += buf.size;
 
   if (buf.d) {
     free(buf.d);
@@ -736,138 +681,4 @@ bool spec_n(char **scur, int *written, conv_t *mods, va_list *args) {
   ++*scur;
 
   return is_error;
-}
-
-void flttostr(char *dst, const uint128_t bits, const uint32_t manbits,
-              const uint32_t expbits, const bool explicit_leading_bit,
-              conv_t *mods) {
-  const uint32_t bias = (1U << (expbits - 1)) - 1;
-  const uint128_t ieee_man = bits & ((ONE << manbits) - 1);
-  const uint32_t ieee_exp =
-      (uint32_t)((bits >> manbits) & ((ONE << expbits) - 1));
-  bool zero_inf_nan = false;
-
-  if (ieee_exp == ((1U << expbits) - 1U) && ieee_man == 0) {
-    if (mods->spec == 'E' || mods->spec == 'G') {
-      s21_strcpy(dst, "INF");
-    } else {
-      s21_strcpy(dst, "inf");
-    }
-    zero_inf_nan = true;
-  } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man != 0) {
-    if (mods->spec == 'E' || mods->spec == 'G') {
-      s21_strcpy(dst, "NAN");
-    } else {
-      s21_strcpy(dst, "nan");
-    }
-    zero_inf_nan = true;
-  }
-
-  if (!zero_inf_nan) {
-    /* f = m * 2^e */
-    int32_t e = 0;
-    uint128_t m = 0;
-
-    if (explicit_leading_bit) {
-      e = ieee_exp == 0 ? 1 - bias - manbits + 1
-                        : ieee_exp - bias - manbits + 1;
-      m = ieee_man;
-    } else {
-      e = ieee_exp == 0 ? 1 - bias - manbits : ieee_exp - bias - manbits;
-      m = ieee_exp == 0 ? ieee_man : (ONE << manbits) | ieee_man;
-    }
-
-    long long unsigned lower = (long long unsigned)m;
-    long long unsigned upper = (long long unsigned)(m - (uint128_t)lower);
-
-    mpf_t mpres;
-    mpz_t mpman;
-    mpf_init(&mpres);
-    mpz_init_set_ull(&mpman, lower);
-    if (upper) {
-      mpz_realloc(&mpman, 2);
-      mpman.size = 2;
-      mpman.d[1] = upper;
-    }
-    printf("Before calc:\nLower: %llu\nUpper: %llu\nExp: %d\n", lower, upper,
-           e);
-
-    int prec = mods->prec < 0 ? 6 : mods->prec;
-    if (!prec && mods->spec == 'g') prec = 1;
-
-    /* Bitwise left shift by e (multiplication) */
-    if (e >= 0) {
-      mpz_mul_2exp(&mpres, &mpman, e);
-    } else { /* Bitwise right shift by e until needed precision is reached
-                (fractional division) */
-      e = -e;
-      mpz_fdiv_2exp(&mpres, &mpman, e, prec);
-    }
-
-    printf("After calc:\nExp: %d\nFig: %d\n", mpres.exp, mpres.fig);
-
-    /* Conversion to string */
-    if (mods->spec == 'f') {
-      mpf_to_fltnot(dst, &mpres, prec);
-      printf("After Conv Value's:\nExp: %d\nFig: %d\n", mpres.exp, mpres.fig);
-      printf("After fltnot value: %s\n\n", dst);
-
-      if (mods->hash && !s21_strchr(dst, '.')) {
-        char *cur = dst + s21_strlen(dst);
-        *cur++ = '.';
-        *cur = '\0';
-      }
-    } else if (mods->spec == 'e' || mods->spec == 'E') {
-      mpf_to_scinot(dst, &mpres, prec, mods->spec == 'E');
-
-      if (mods->hash && !s21_strchr(dst, '.')) {
-        char *expstart = s21_strchr(dst, 'e');
-        char *expend = dst + s21_strlen(dst);
-
-        for (; expend >= expstart; --expend) {
-          *(expend + 1) = *expend;
-        }
-        *expstart = '.';
-      }
-    } else if (mods->spec == 'g' || mods->spec == 'G') {
-      if (prec > mpres.exp && mpres.exp >= -4) {
-        mpf_to_fltnot(dst, &mpres, prec - 1 - mpres.exp);
-
-        if (mods->hash && !s21_strchr(dst, '.')) {
-          char *cur = dst + s21_strlen(dst);
-          *cur++ = '.';
-          *cur = '\0';
-        } else if (!mods->hash && s21_strchr(dst, '.')) {
-          char *cur = dst + s21_strlen(dst) - 1;
-
-          for (; *cur == '0'; --cur) {
-          }
-
-          *(cur + (*cur != '.')) = '\0';
-        }
-      } else {
-        mpf_to_scinot(dst, &mpres, prec - 1, mods->spec == 'G');
-
-        char *expstart = s21_strchr(dst, 'e');
-        char *expend = dst + s21_strlen(dst);
-
-        if (mods->hash && !s21_strchr(dst, '.')) {
-          for (; expend >= expstart; --expend) {
-            *(expend + 1) = *expend;
-          }
-          *expstart = '.';
-        } else if (!mods->hash && s21_strchr(dst, '.')) {
-          char *frac = expstart - 1;
-
-          for (; *frac == '0'; --frac) {
-          }
-
-          *(frac + (*frac != '.')) = '\0';
-        }
-      }
-    }
-
-    mpf_clear(&mpres);
-    mpz_clear(&mpman);
-  }
 }

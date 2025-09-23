@@ -1035,970 +1035,1341 @@ START_TEST(mpf_rint_zero) {
 END_TEST
 
 START_TEST(mpf_to_fltnot_exp2_prec6) {
+  sc_t dst = {0};
+  dst.alloc = 11;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 2;
 
-  char dst[11] = {0};
   char exp[11] = "123.456789";
 
-  mpf_to_fltnot(dst, &op, 6);
+  mpf_to_fltnot(&dst, &op, 6);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_exp2_prec3) {
+  sc_t dst = {0};
+  dst.alloc = 7;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 2;
 
-  char dst[7] = {0};
   char exp[7] = "123.457";
 
-  mpf_to_fltnot(dst, &op, 3);
+  mpf_to_fltnot(&dst, &op, 3);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_exp2_prec1) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 2;
 
-  char dst[6] = {0};
   char exp[6] = "123.5";
 
-  mpf_to_fltnot(dst, &op, 1);
+  mpf_to_fltnot(&dst, &op, 1);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_exp2_prec0) {
+  sc_t dst = {0};
+  dst.alloc = 5;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 2;
 
-  char dst[5] = {0};
   char exp[5] = "123";
 
-  mpf_to_fltnot(dst, &op, 0);
+  mpf_to_fltnot(&dst, &op, 0);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_exp0_prec8) {
+  sc_t dst = {0};
+  dst.alloc = 11;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 0;
 
-  char dst[11] = {0};
   char exp[11] = "1.23456789";
 
-  mpf_to_fltnot(dst, &op, 8);
+  mpf_to_fltnot(&dst, &op, 8);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_exp0_prec3) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 0;
 
-  char dst[6] = {0};
   char exp[6] = "1.235";
 
-  mpf_to_fltnot(dst, &op, 3);
+  mpf_to_fltnot(&dst, &op, 3);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_exp0_prec1) {
+  sc_t dst = {0};
+  dst.alloc = 4;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 0;
 
-  char dst[4] = {0};
   char exp[4] = "1.2";
 
-  mpf_to_fltnot(dst, &op, 1);
+  mpf_to_fltnot(&dst, &op, 1);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_exp0_prec0) {
+  sc_t dst = {0};
+  dst.alloc = 2;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 0;
 
-  char dst[2] = {0};
   char exp[2] = "1";
 
-  mpf_to_fltnot(dst, &op, 0);
+  mpf_to_fltnot(&dst, &op, 0);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_expN4_prec12) {
+  sc_t dst = {0};
+  dst.alloc = 15;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[15] = {0};
   char exp[15] = "0.000123456789";
 
-  mpf_to_fltnot(dst, &op, 12);
+  mpf_to_fltnot(&dst, &op, 12);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_expN4_prec7) {
+  sc_t dst = {0};
+  dst.alloc = 10;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[10] = {0};
   char exp[10] = "0.0001235";
 
-  mpf_to_fltnot(dst, &op, 7);
+  mpf_to_fltnot(&dst, &op, 7);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_expN4_prec6) {
+  sc_t dst = {0};
+  dst.alloc = 9;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[9] = {0};
   char exp[9] = "0.000123";
 
-  mpf_to_fltnot(dst, &op, 6);
+  mpf_to_fltnot(&dst, &op, 6);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_expN4_prec4) {
+  sc_t dst = {0};
+  dst.alloc = 7;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[7] = {0};
   char exp[7] = "0.0001";
 
-  mpf_to_fltnot(dst, &op, 4);
+  mpf_to_fltnot(&dst, &op, 4);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_expN4_prec3) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[6] = {0};
   char exp[6] = "0.000";
 
-  mpf_to_fltnot(dst, &op, 3);
+  mpf_to_fltnot(&dst, &op, 3);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_expN4_prec0) {
+  sc_t dst = {0};
+  dst.alloc = 2;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[2] = {0};
   char exp[2] = "0";
 
-  mpf_to_fltnot(dst, &op, 0);
+  mpf_to_fltnot(&dst, &op, 0);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_new_diglen_1) {
+  sc_t dst = {0};
+  dst.alloc = 5;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 995);
   op.fig = 4;
   op.exp = -1;
 
-  char dst[5] = {0};
   char exp[5] = "1.00";
 
-  mpf_to_fltnot(dst, &op, 2);
+  mpf_to_fltnot(&dst, &op, 2);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
   ck_assert_int_eq(op.exp, 0);
   ck_assert_int_eq(op.fig, 3);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_new_diglen_2) {
+  sc_t dst = {0};
+  dst.alloc = 4;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 99501);
   op.fig = 6;
   op.exp = -1;
 
-  char dst[4] = {0};
   char exp[4] = "1.0";
 
-  mpf_to_fltnot(dst, &op, 1);
+  mpf_to_fltnot(&dst, &op, 1);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
   ck_assert_int_eq(op.exp, 0);
   ck_assert_int_eq(op.fig, 2);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_new_diglen_3) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 9995);
   op.fig = 4;
   op.exp = 0;
 
-  char dst[6] = {0};
   char exp[6] = "10.00";
 
-  mpf_to_fltnot(dst, &op, 2);
+  mpf_to_fltnot(&dst, &op, 2);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
   ck_assert_int_eq(op.exp, 1);
   ck_assert_int_eq(op.fig, 4);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_new_diglen_4) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 95);
   op.fig = 5;
   op.exp = -3;
 
-  char dst[6] = {0};
   char exp[6] = "0.010";
 
-  mpf_to_fltnot(dst, &op, 3);
+  mpf_to_fltnot(&dst, &op, 3);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
   ck_assert_int_eq(op.exp, -2);
   ck_assert_int_eq(op.fig, 4);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_new_diglen_5) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 195);  // 0.00195 (1.95e-03) -> 0.002
   op.fig = 6;
   op.exp = -3;
 
-  char dst[6] = {0};
   char exp[6] = "0.002";
 
-  mpf_to_fltnot(dst, &op, 3);
+  mpf_to_fltnot(&dst, &op, 3);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
   ck_assert_int_eq(op.exp, -3);
   ck_assert_int_eq(op.fig, 4);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_round_to_even_1) {
+  sc_t dst = {0};
+  dst.alloc = 4;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 115);
   op.fig = 3;
   op.exp = 0;
 
-  char dst[4] = {0};
   char exp[4] = "1.2";
 
-  mpf_to_fltnot(dst, &op, 1);
+  mpf_to_fltnot(&dst, &op, 1);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_round_to_even_2) {
+  sc_t dst = {0};
+  dst.alloc = 4;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 125);
   op.fig = 3;
   op.exp = 0;
 
-  char dst[4] = {0};
   char exp[4] = "1.2";
 
-  mpf_to_fltnot(dst, &op, 1);
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  mpf_to_fltnot(&dst, &op, 1);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_default_round_1) {
+  sc_t dst = {0};
+  dst.alloc = 2;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 575);
   op.fig = 3;
   op.exp = 0;
 
-  char dst[2] = {0};
   char exp[2] = "6";
 
-  mpf_to_fltnot(dst, &op, 0);
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  mpf_to_fltnot(&dst, &op, 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_default_round_2) {
+  sc_t dst = {0};
+  dst.alloc = 2;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 545);
   op.fig = 3;
   op.exp = 0;
 
-  char dst[2] = {0};
   char exp[2] = "5";
 
-  mpf_to_fltnot(dst, &op, 0);
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  mpf_to_fltnot(&dst, &op, 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_grprec_1) {
+  sc_t dst = {0};
+  dst.alloc = 14;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 2;
 
-  char dst[14] = {0};
   char exp[14] = "123.456789000";
 
-  mpf_to_fltnot(dst, &op, 9);
+  mpf_to_fltnot(&dst, &op, 9);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_grprec_2) {
+  sc_t dst = {0};
+  dst.alloc = 18;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[18] = {0};
   char exp[18] = "0.000123456789000";
 
-  mpf_to_fltnot(dst, &op, 15);
+  mpf_to_fltnot(&dst, &op, 15);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_zero_prec6) {
+  sc_t dst = {0};
+  dst.alloc = 9;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 0);
   op.fig = 1;
   op.exp = 0;
 
-  char dst[9] = {0};
   char exp[9] = "0.000000";
 
-  mpf_to_fltnot(dst, &op, 6);
+  mpf_to_fltnot(&dst, &op, 6);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_fltnot_zero_prec0) {
+  sc_t dst = {0};
+  dst.alloc = 2;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 0);
   op.fig = 1;
   op.exp = 0;
 
-  char dst[2] = {0};
   char exp[2] = "0";
 
-  mpf_to_fltnot(dst, &op, 0);
+  mpf_to_fltnot(&dst, &op, 0);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_exp2_prec8) {
+  sc_t dst = {0};
+  dst.alloc = 15;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 2;
 
-  char dst[15] = {0};
   char exp[15] = "1.23456789e+02";
 
-  mpf_to_scinot(dst, &op, 8, false);
+  mpf_to_scinot(&dst, &op, 8, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_exp2_prec6) {
+  sc_t dst = {0};
+  dst.alloc = 13;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 2;
 
-  char dst[13] = {0};
   char exp[13] = "1.234568e+02";
 
-  mpf_to_scinot(dst, &op, 6, false);
+  mpf_to_scinot(&dst, &op, 6, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_exp2_prec3) {
+  sc_t dst = {0};
+  dst.alloc = 10;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 2;
 
-  char dst[10] = {0};
   char exp[10] = "1.235e+02";
 
-  mpf_to_scinot(dst, &op, 3, false);
+  mpf_to_scinot(&dst, &op, 3, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_exp2_prec2) {
+  sc_t dst = {0};
+  dst.alloc = 9;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 2;
 
-  char dst[9] = {0};
   char exp[9] = "1.23e+02";
 
-  mpf_to_scinot(dst, &op, 2, false);
+  mpf_to_scinot(&dst, &op, 2, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_exp2_prec0) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 2;
 
-  char dst[6] = {0};
   char exp[6] = "1e+02";
 
-  mpf_to_scinot(dst, &op, 0, false);
+  mpf_to_scinot(&dst, &op, 0, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_exp0_prec8) {
+  sc_t dst = {0};
+  dst.alloc = 15;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 0;
 
-  char dst[15] = {0};
   char exp[15] = "1.23456789e+00";
 
-  mpf_to_scinot(dst, &op, 8, false);
+  mpf_to_scinot(&dst, &op, 8, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_exp0_prec3) {
+  sc_t dst = {0};
+  dst.alloc = 10;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 0;
 
-  char dst[10] = {0};
   char exp[10] = "1.235e+00";
 
-  mpf_to_scinot(dst, &op, 3, false);
+  mpf_to_scinot(&dst, &op, 3, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_exp0_prec1) {
+  sc_t dst = {0};
+  dst.alloc = 8;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 0;
 
-  char dst[8] = {0};
   char exp[8] = "1.2e+00";
 
-  mpf_to_scinot(dst, &op, 1, false);
+  mpf_to_scinot(&dst, &op, 1, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_exp0_prec0) {
+  sc_t dst = {0};
+  dst.alloc = 8;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 0;
 
-  char dst[8] = {0};
   char exp[8] = "1e+00";
 
-  mpf_to_scinot(dst, &op, 0, false);
+  mpf_to_scinot(&dst, &op, 0, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_expN4_prec8) {
+  sc_t dst = {0};
+  dst.alloc = 15;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[15] = {0};
   char exp[15] = "1.23456789e-04";
 
-  mpf_to_scinot(dst, &op, 8, false);
+  mpf_to_scinot(&dst, &op, 8, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_expN4_prec3) {
+  sc_t dst = {0};
+  dst.alloc = 10;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[10] = {0};
   char exp[10] = "1.235e-04";
 
-  mpf_to_scinot(dst, &op, 3, false);
+  mpf_to_scinot(&dst, &op, 3, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_expN4_prec2) {
+  sc_t dst = {0};
+  dst.alloc = 9;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[9] = {0};
   char exp[9] = "1.23e-04";
 
-  mpf_to_scinot(dst, &op, 2, false);
+  mpf_to_scinot(&dst, &op, 2, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_expN4_prec0) {
+  sc_t dst = {0};
+  dst.alloc = 7;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[7] = {0};
   char exp[7] = "1e-04";
 
-  mpf_to_scinot(dst, &op, 0, false);
+  mpf_to_scinot(&dst, &op, 0, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_new_diglen_1) {
+  sc_t dst = {0};
+  dst.alloc = 8;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 995);
   op.fig = 4;
   op.exp = -1;
 
-  char dst[8] = {0};
   char exp[8] = "1.0e+00";
 
-  mpf_to_scinot(dst, &op, 1, false);
+  mpf_to_scinot(&dst, &op, 1, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
   ck_assert_int_eq(op.exp, 0);
   ck_assert_int_eq(op.fig, 3);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_new_diglen_2) {
+  sc_t dst = {0};
+  dst.alloc = 8;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 99501);  // 0.99501 (9.9501e-01)
   op.fig = 6;
   op.exp = -1;
 
-  char dst[8] = {0};
   char exp[8] = "1.0e+00";
 
-  mpf_to_scinot(dst, &op, 1, false);
+  mpf_to_scinot(&dst, &op, 1, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
   ck_assert_int_eq(op.exp, 0);
   ck_assert_int_eq(op.fig, 3);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_new_diglen_3) {
+  sc_t dst = {0};
+  dst.alloc = 9;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 9995);  // 9.995 -> 10.00
   op.fig = 4;
   op.exp = 0;
 
-  char dst[9] = {0};
   char exp[9] = "1.00e+01";
 
-  mpf_to_scinot(dst, &op, 2, false);
+  mpf_to_scinot(&dst, &op, 2, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
   ck_assert_int_eq(op.exp, 1);
   ck_assert_int_eq(op.fig, 4);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_new_diglen_4) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 95);  // 0.0095 (9.5e-03) -> 0.010
   op.fig = 5;
   op.exp = -3;
 
-  char dst[6] = {0};
   char exp[6] = "1e-02";
 
-  mpf_to_scinot(dst, &op, 0, false);
+  mpf_to_scinot(&dst, &op, 0, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
   ck_assert_int_eq(op.exp, -2);
   ck_assert_int_eq(op.fig, 4);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_new_diglen_5) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 195);  // 0.00195 (1.95e-03) -> 0.002
   op.fig = 6;
   op.exp = -3;
 
-  char dst[6] = {0};
   char exp[6] = "2e-03";
 
-  mpf_to_scinot(dst, &op, 0, false);
+  mpf_to_scinot(&dst, &op, 0, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
   ck_assert_int_eq(op.exp, -3);
   ck_assert_int_eq(op.fig, 4);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_round_to_even_1) {
+  sc_t dst = {0};
+  dst.alloc = 8;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 115);
   op.fig = 3;
   op.exp = 0;
 
-  char dst[8] = {0};
   char exp[8] = "1.2e+00";
 
-  mpf_to_scinot(dst, &op, 1, false);
+  mpf_to_scinot(&dst, &op, 1, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_round_to_even_2) {
+  sc_t dst = {0};
+  dst.alloc = 8;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 125);
   op.fig = 3;
   op.exp = 0;
 
-  char dst[8] = {0};
   char exp[8] = "1.2e+00";
 
-  mpf_to_scinot(dst, &op, 1, false);
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  mpf_to_scinot(&dst, &op, 1, false);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_default_round_1) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 575);
   op.fig = 3;
   op.exp = 0;
 
-  char dst[6] = {0};
   char exp[6] = "6e+00";
 
-  mpf_to_scinot(dst, &op, 0, false);
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  mpf_to_scinot(&dst, &op, 0, false);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_default_round_2) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 545);
   op.fig = 3;
   op.exp = 0;
 
-  char dst[6] = {0};
   char exp[6] = "5e+00";
 
-  mpf_to_scinot(dst, &op, 0, false);
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  mpf_to_scinot(&dst, &op, 0, false);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_grprec_1) {
+  sc_t dst = {0};
+  dst.alloc = 18;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 9;
   op.exp = 2;
 
-  char dst[18] = {0};
   char exp[18] = "1.23456789000e+02";
 
-  mpf_to_scinot(dst, &op, 11, false);
+  mpf_to_scinot(&dst, &op, 11, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_grprec_2) {
+  sc_t dst = {0};
+  dst.alloc = 18;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 123456789);
   op.fig = 13;
   op.exp = -4;
 
-  char dst[18] = {0};
   char exp[18] = "1.23456789000e-04";
 
-  mpf_to_scinot(dst, &op, 11, false);
+  mpf_to_scinot(&dst, &op, 11, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_zero_prec6) {
+  sc_t dst = {0};
+  dst.alloc = 13;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 0);
   op.fig = 1;
   op.exp = 0;
 
-  char dst[13] = {0};
   char exp[13] = "0.000000e+00";
 
-  mpf_to_scinot(dst, &op, 6, false);
+  mpf_to_scinot(&dst, &op, 6, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
 START_TEST(mpf_to_scinot_zero_prec0) {
+  sc_t dst = {0};
+  dst.alloc = 6;
+  dst.d = malloc(dst.alloc);
+
   mpf_t op;
   mpf_init(&op);
   mpz_set_ull(&op.man, 0);
   op.fig = 1;
   op.exp = 0;
 
-  char dst[6] = {0};
   char exp[6] = "0e+00";
 
-  mpf_to_scinot(dst, &op, 0, false);
+  mpf_to_scinot(&dst, &op, 0, false);
 
-  ck_assert_int_eq(s21_strcmp(dst, exp), 0);
+  ck_assert_int_eq(s21_strcmp(dst.d, exp), 0);
 
   mpf_clear(&op);
+
+  if (dst.d) {
+    free(dst.d);
+  }
 }
 END_TEST
 
