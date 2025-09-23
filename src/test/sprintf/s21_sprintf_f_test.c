@@ -7,7 +7,6 @@ START_TEST(s21_sprintf_spec_f_basic_positive) {
   long double num2 = 123.456789L;
   int read1 = s21_sprintf(str1, "%f %Lf", num1, num2);
   int read2 = sprintf(str2, "%f %Lf", num1, num2);
-  printf("str1: %s\nstr2: %s\n\n", str1, str2);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
 }
@@ -20,7 +19,6 @@ START_TEST(s21_sprintf_spec_f_basic_negative) {
   long double num2 = -123.456789;
   int read1 = s21_sprintf(str1, "%f %Lf", num1, num2);
   int read2 = sprintf(str2, "%f %Lf", num1, num2);
-  printf("str1: %s\nstr2: %s\n\n", str1, str2);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
 }
@@ -33,8 +31,6 @@ START_TEST(s21_sprintf_spec_f_zero) {
   long double num2 = 0;
   int read1 = s21_sprintf(str1, "%f %Lf", num1, num2);
   int read2 = sprintf(str2, "%f %Lf", num1, num2);
-  printf("s21: %s\n", str1);
-  printf("std: %s\n\n", str2);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
 }
@@ -50,8 +46,6 @@ START_TEST(s21_sprintf_spec_f_integer_part_only) {
   for (int i = 0; i < count; i++) {
     int read1 = s21_sprintf(str1, "%f %Lf", numbers1[i], numbers2[i]);
     int read2 = sprintf(str2, "%f %Lf", numbers1[i], numbers2[i]);
-    printf("s21: %s\n", str1);
-    printf("std: %s\n\n", str2);
     ck_assert_int_eq(s21_strcmp(str1, str2), 0);
     ck_assert_int_eq(read1, read2);
   }
@@ -72,9 +66,6 @@ START_TEST(s21_sprintf_spec_f_fractional_part_only) {
   for (int i = 0; i < count; i++) {
     int read1 = s21_sprintf(str1, "%f %Lf", numbers1[i], numbers2[i]);
     int read2 = sprintf(str2, "%f %Lf", numbers1[i], numbers2[i]);
-    printf("s21: %s\n", str1);
-    printf("std: %s\n\n", str2);
-    fflush(stdout);
     ck_assert_int_eq(s21_strcmp(str1, str2), 0);
     ck_assert_int_eq(read1, read2);
   }
@@ -91,9 +82,6 @@ START_TEST(s21_sprintf_spec_f_mass_test_1) {
       long double num2 = i + j * 0.123456789L;
       int read1 = s21_sprintf(str1, "%f %Lf", num1, num2);
       int read2 = sprintf(str2, "%f %Lf", num1, num2);
-      printf("s21: %s\n", str1);
-      printf("std: %s\n\n", str2);
-      fflush(stdout);
       ck_assert_int_eq(s21_strcmp(str1, str2), 0);
       ck_assert_int_eq(read1, read2);
     }
@@ -266,9 +254,6 @@ START_TEST(s21_sprintf_spec_f_flag_plus) {
   for (int i = 0; i < count; i++) {
     int read1 = s21_sprintf(str1, "%+f", numbers[i]);
     int read2 = sprintf(str2, "%+f", numbers[i]);
-    printf("s21: %s\n", str1);
-    printf("std: %s\n\n", str2);
-    fflush(stdout);
     ck_assert_int_eq(s21_strcmp(str1, str2), 0);
     ck_assert_int_eq(read1, read2);
   }
@@ -284,9 +269,6 @@ START_TEST(s21_sprintf_spec_f_flag_space) {
   for (int i = 0; i < count; i++) {
     int read1 = s21_sprintf(str1, "% f", numbers[i]);
     int read2 = sprintf(str2, "% f", numbers[i]);
-    printf("s21: %s\n", str1);
-    printf("std: %s\n\n", str2);
-    fflush(stdout);
     ck_assert_int_eq(s21_strcmp(str1, str2), 0);
     ck_assert_int_eq(read1, read2);
   }
@@ -389,9 +371,6 @@ START_TEST(s21_sprintf_spec_f_all_flags_combo) {
   char str2[128];
   int read1 = s21_sprintf(str1, "%+#020.3f", 123.0);
   int read2 = sprintf(str2, "%+#020.3f", 123.0);
-  printf("s21: %s\n", str1);
-  printf("std: %s\n\n", str2);
-  fflush(stdout);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
 }
@@ -415,9 +394,6 @@ START_TEST(s21_sprintf_spec_f_negative_infinity) {
                           inf, inf, inf);
   int read2 =
       sprintf(str2, "%f %+f % f %05f %.0f %.10f", inf, inf, inf, inf, inf, inf);
-  printf("s21: %s\n", str1);
-  printf("std: %s\n\n", str2);
-  fflush(stdout);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
 }
@@ -431,9 +407,6 @@ START_TEST(s21_sprintf_spec_f_positive_infinity) {
                           inf, inf, inf);
   int read2 =
       sprintf(str2, "%f %+f % f %05f %.0f %.10f", inf, inf, inf, inf, inf, inf);
-  printf("s21: %s\n", str1);
-  printf("std: %s\n\n", str2);
-  fflush(stdout);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
 }
@@ -447,9 +420,6 @@ START_TEST(s21_sprintf_spec_f_nan) {
                           nan, nan, nan);
   int read2 =
       sprintf(str2, "%f %+f % f %05f %.0f %.10f", nan, nan, nan, nan, nan, nan);
-  printf("s21: %s\n", str1);
-  printf("std: %s\n\n", str2);
-  fflush(stdout);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
 }
@@ -515,9 +485,6 @@ START_TEST(s21_sprintf_spec_f_negative_width) {
   char str2[128];
   int read1 = s21_sprintf(str1, "%*f", -15, 123.456);
   int read2 = sprintf(str2, "%*f", -15, 123.456);
-  printf("s21: %s\n", str1);
-  printf("std: %s\n\n", str2);
-  fflush(stdout);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
 }

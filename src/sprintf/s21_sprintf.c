@@ -648,7 +648,6 @@ bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
   }
 
   addwid(&buf, mods);
-  printf("After addwid:\nsize = %lu\nstr = %s\n\n", buf.size, buf.d);
 
   for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
     **scur = buf.d[i];

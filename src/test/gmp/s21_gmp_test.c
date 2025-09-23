@@ -1061,7 +1061,7 @@ END_TEST
 
 START_TEST(mpf_to_fltnot_exp2_prec3) {
   sc_t dst = {0};
-  dst.alloc = 7;
+  dst.alloc = 8;
   dst.d = malloc(dst.alloc);
 
   mpf_t op;
@@ -1070,7 +1070,7 @@ START_TEST(mpf_to_fltnot_exp2_prec3) {
   op.fig = 9;
   op.exp = 2;
 
-  char exp[7] = "123.457";
+  char exp[8] = "123.457";
 
   mpf_to_fltnot(&dst, &op, 3);
 

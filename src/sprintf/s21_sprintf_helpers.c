@@ -185,8 +185,8 @@ void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
       mpman.size = 2;
       mpman.d[1] = upper;
     }
-    printf("Before calc:\nLower: %llu\nUpper: %llu\nExp: %d\n", lower, upper,
-           e);
+    // printf("Before calc:\nLower: %llu\nUpper: %llu\nExp: %d\n", lower, upper,
+    //        e);
 
     int prec = mods->prec < 0 ? 6 : mods->prec;
     if (!prec && mods->spec == 'g') prec = 1;
@@ -200,19 +200,21 @@ void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
       mpz_fdiv_2exp(&mpres, &mpman, e, prec);
     }
 
-    printf("After calc:\nExp: %d\nFig: %d\n", mpres.exp, mpres.fig);
+    // printf("After calc:\nExp: %d\nFig: %d\n", mpres.exp, mpres.fig);
 
     /* Conversion to string */
     if (mods->spec == 'f') {
       mpf_to_fltnot(dst, &mpres, prec);
-      printf("After Conv Value's:\nExp: %d\nFig: %d\n", mpres.exp, mpres.fig);
-      printf("After fltnot:\nsc_t size: %lu\nvalue: %s\n\n", dst->size, dst->d);
+      // printf("After Conv Value's:\nExp: %d\nFig: %d\n", mpres.exp,
+      // mpres.fig); printf("After fltnot:\nsc_t size: %lu\nvalue: %s\n\n",
+      // dst->size, dst->d);
 
       if (mods->hash && !s21_strchr(dst->d, '.')) {
         dst->d[dst->size++] = '.';
         dst->d[dst->size] = '\0';
       }
-      printf("After hash:\nsc_t size: %lu\nvalue: %s\n\n", dst->size, dst->d);
+      // printf("After hash:\nsc_t size: %lu\nvalue: %s\n\n", dst->size,
+      // dst->d);
     } else if (mods->spec == 'e' || mods->spec == 'E') {
       mpf_to_scinot(dst, &mpres, prec, mods->spec == 'E');
 

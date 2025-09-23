@@ -3,7 +3,7 @@
 
 #if defined(__APPLE__)
 #define ERROR_COUNT 107
-
+#define UNKNOWN_ERROR "Unknown error:"
 #define ERRORS                                               \
   {[0] = "Undefined error: 0",                               \
    [1] = "Operation not permitted",                          \
@@ -113,12 +113,9 @@
    [105] = "Previous owner died",                            \
    [106] = "Interface output queue is full",                 \
    [107] = "Capabilities insufficient"}
-
-#define UNKNOWN_ERROR "Unknown error:"
-
 #elif defined(__linux__) && defined(__GLIBC__)
 #define ERROR_COUNT 133
-
+#define UNKNOWN_ERROR "Unknown error"
 #define ERRORS                                                 \
   {[0] = "Success",                                            \
    [1] = "Operation not permitted",                            \
@@ -254,12 +251,9 @@
    [131] = "State not recoverable",                            \
    [132] = "Operation not possible due to RF-kill",            \
    [133] = "Memory page has hardware error"}
-
-#define UNKNOWN_ERROR "Unknown error"
-
-#elif defined(__linux__) && !defined(__GLIBC__)
+#else
 #define ERROR_COUNT 131
-
+#define UNKNOWN_ERROR "No error information"
 #define ERRORS                                        \
   {[0] = "No error information",                      \
    [1] = "Operation not permitted",                   \
@@ -393,8 +387,5 @@
    [129] = "Key was rejected by service",             \
    [130] = "Previous owner died",                     \
    [131] = "State not recoverable"}
-
-#define UNKNOWN_ERROR "No error information"
 #endif
-
 #endif
