@@ -64,11 +64,22 @@ bool get_convmods(const char **fcur, conv_t *mods, va_list *args) {
 
   if (**fcur == '*') {
     mods->wid = va_arg(*args, int);
+    if (mods->wid < 0) {
+      mods->wid = mods->wid != INT_MIN ? abs(mods->wid) : INT_MAX;
+      mods->minus = true;
+    }
     ++*fcur;
-  } else if (**fcur >= '0' && **fcur <= '9') {
+  } else if ((**fcur >= '0' && **fcur <= '9') || **fcur == '-') {
     mods->wid = 0;
-    for (; **fcur >= '0' && **fcur <= '9'; ++*fcur) {
-      mods->wid = mods->wid * 10 + (**fcur - '0');
+    long tmp = 0;
+
+    if (**fcur == '-') {
+      mods->minus = true;
+      ++*fcur;
+    }
+    for (; **fcur >= '0' && **fcur <= '9' && tmp <= INT_MAX; ++*fcur) {
+      tmp = mods->wid * 10 + (**fcur - '0');
+      mods->wid = tmp <= INT_MAX ? tmp : INT_MAX;
     }
   }
 
@@ -80,13 +91,16 @@ bool get_convmods(const char **fcur, conv_t *mods, va_list *args) {
     } else if ((**fcur >= '0' && **fcur <= '9') || **fcur == '-') {
       mods->prec = 0;
       int coef = 1;
+      long tmp = 0;
       if (**fcur == '-') {
         coef = -1;
         ++*fcur;
       }
-      for (; **fcur >= '0' && **fcur <= '9'; ++*fcur) {
-        mods->prec = mods->prec * 10 + (**fcur - '0') * coef;
+      for (; **fcur >= '0' && **fcur <= '9' && tmp <= INT_MAX; ++*fcur) {
+        tmp = mods->prec * 10 + (**fcur - '0');
+        mods->prec = tmp <= INT_MAX ? tmp : INT_MAX;
       }
+      mods->prec *= coef;
     } else {
       mods->prec = 0;
     }
@@ -114,11 +128,6 @@ void adjust_convmods(conv_t *mods) {
   if ((mods->prec >= 0 && s21_strchr("dioxXu", mods->spec)) || mods->minus ||
       s21_strchr("cs", mods->spec)) {
     mods->zero = false;
-  }
-
-  if (mods->wid < 0) {
-    mods->wid = mods->wid != INT_MIN ? abs(mods->wid) : INT_MAX;
-    mods->minus = true;
   }
 }
 
@@ -619,54 +628,42 @@ bool spec_p(char **scur, int *written, conv_t *mods, va_list *args) {
 }
 
 bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
+  long double arg = 0;
   uint128_t bits = 0;
-  int whole_part_len = 0;
-  int sign = 0;
-  bool is_negative = false;
-  bool is_inf = false;
-  bool is_nan = false;
+  int wholelen = 0;
   bool is_error = false;
 
   if (mods->len == 'L') {
-    long double arg = va_arg(*args, long double);
-    s21_memcpy(&bits, &arg, sizeof(long double));
-    if (!isinf(arg) && !isnan(arg)) {
-      whole_part_len = fabsl(arg) >= 1 ? floorl(log10l(fabsl(arg))) + 1 : 1;
-    } else {
-      whole_part_len = 3;
-      is_inf = isinf(arg);
-      is_nan = isnan(arg);
-      mods->zero = false;
-    }
-    is_negative = arg < 0;
-    sign = is_negative || mods->space || mods->plus ? 1 : 0;
-
+    long double ldarg = va_arg(*args, long double);
+    s21_memcpy(&bits, &ldarg, sizeof(long double));
+    arg = ldarg;
   } else {
-    double arg = va_arg(*args, double);
-    s21_memcpy(&bits, &arg, sizeof(double));
-    if (!isinf(arg) && !isnan(arg)) {
-      whole_part_len = fabsl(arg) >= 1 ? floorl(log10l(fabsl(arg))) + 1 : 1;
-    } else {
-      whole_part_len = 3;
-      is_inf = isinf(arg);
-      is_nan = isnan(arg);
-      mods->zero = false;
-    }
-    is_negative = arg < 0;
-    sign = is_negative || (!is_nan && mods->space) || (!is_nan && mods->plus)
-               ? 1
-               : 0;
+    double darg = va_arg(*args, double);
+    s21_memcpy(&bits, &darg, sizeof(double));
+    arg = darg;
   }
-#if defined(__linux__)
-  if (is_nan && (mods->space || mods->plus)) {
-    sign = 1;
+
+  if (!isinf(arg) && !isnan(arg)) {
+    wholelen = fabsl(arg) >= 1 ? floorl(log10l(fabsl(arg))) + 1 : 1;
+  } else {
+    wholelen = 3;
+    mods->zero = false;
   }
+
+#if defined(__APPLE__)
+  int sign =
+      arg < 0 || (!isnan(arg) && mods->space) || (!isnan(arg) && mods->plus)
+          ? 1
+          : 0;
+#elif defined(__linux__)
+  int sign = arg < 0 || mods->space || mods->plus ? 1 : 0;
 #endif
 
+  int exp = mods->spec == 'E' || mods->spec == 'e' ? 4 : 0;
   int prec = mods->prec < 0 ? 6 : mods->prec;
   int dot = prec || (!prec && mods->hash) ? 1 : 0;
-  int arglen = !is_inf && !is_nan ? whole_part_len + prec + dot + sign
-                                  : whole_part_len + sign;
+  int arglen = !isinf(arg) && !isnan(arg) ? wholelen + prec + dot + sign + exp
+                                          : wholelen + sign;
   int widdif = mods->wid > arglen ? mods->wid - arglen : 0;
   int needed_alloc = arglen + widdif + 1;
 
@@ -680,15 +677,15 @@ bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
     char *bufcur = buf.d;
 
 #if defined(__APPLE__)
-    if (is_negative) {
+    if (arg < 0) {
       *bufcur++ = '-';
-    } else if (!is_nan && mods->space) {
+    } else if (!isnan(arg) && mods->space) {
       *bufcur++ = ' ';
-    } else if (!is_nan && mods->plus) {
+    } else if (!isnan(arg) && mods->plus) {
       *bufcur++ = '+';
     }
 #elif defined(__linux__)
-    if (is_negative) {
+    if (arg < 0) {
       *bufcur++ = '-';
     } else if (mods->space) {
       *bufcur++ = ' ';
