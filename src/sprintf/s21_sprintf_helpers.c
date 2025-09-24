@@ -136,7 +136,13 @@ bool addwid(sc_t *arr, conv_t *mods) {
 }
 
 /* Conversion Functions */
-void utonbase(sc_t *dst, unsigned long long num, int base) {
+void utonbase(sc_t *dst, unsigned long long num, conv_t *mods) {
+  int base = 10;
+  if (mods->spec == 'o')
+    base = 8;
+  else if (mods->spec == 'x' || mods->spec == 'X')
+    base = 16;
+
   char alphabet[17];
   const int shift = 8; /* ASCII Difference: A - 9 */
 
@@ -269,7 +275,7 @@ void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
     //        e);
 
     int prec = mods->prec < 0 ? 6 : mods->prec;
-    if (!prec && mods->spec == 'g') prec = 1;
+    if (!prec && (mods->spec == 'g' || mods->spec == 'G')) prec = 1;
 
     /* Bitwise left shift by e (multiplication) */
     if (e >= 0) {
@@ -299,7 +305,7 @@ void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
       mpf_to_scinot(dst, &mpres, prec, mods->spec == 'E');
 
       if (mods->hash && !s21_strchr(dst->d, '.')) {
-        char *expstart = s21_strchr(dst->d, 'e');
+        char *expstart = s21_strpbrk(dst->d, "eE");
         char *expend = dst->d + dst->size;
 
         for (; expend >= expstart; --expend) {
@@ -331,7 +337,7 @@ void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
       } else {
         mpf_to_scinot(dst, &mpres, prec - 1, mods->spec == 'G');
 
-        char *expstart = s21_strchr(dst->d, 'e');
+        char *expstart = s21_strpbrk(dst->d, "eE");
         char *expend = dst->d + dst->size;
 
         if (mods->hash && !s21_strchr(dst->d, '.')) {

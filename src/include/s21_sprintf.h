@@ -25,7 +25,7 @@ bool addprec(sc_t *arr, conv_t *mods);
 bool addwid(sc_t *arr, conv_t *mods);
 
 /* Conversion Functions */
-void utonbase(sc_t *dst, unsigned long long num, int base);
+void utonbase(sc_t *dst, unsigned long long num, conv_t *mods);
 bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz);
 void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
               const uint32_t expbits, const bool explicit_leading_bit,

@@ -10,6 +10,7 @@ Suite *suite_s21_sprintf_test(void) {
   suite_add_tcase(s, case_s21_sprintf_u());
   suite_add_tcase(s, case_s21_sprintf_f());
   suite_add_tcase(s, case_s21_sprintf_e());
+  suite_add_tcase(s, case_s21_sprintf_g());
   suite_add_tcase(s, case_s21_sprintf_p());
 
   return s;

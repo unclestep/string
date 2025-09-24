@@ -523,7 +523,7 @@ bool spec_u(char **scur, int *written, conv_t *mods, va_list *args) {
 
   if (!is_error) {
     if (arg || mods->prec) {
-      utonbase(&buf, arg, 10);
+      utonbase(&buf, arg, mods);
       is_error = addprec(&buf, mods);
     }
     if (!is_error) is_error = addwid(&buf, mods);
