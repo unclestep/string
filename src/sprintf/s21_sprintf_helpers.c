@@ -1,5 +1,41 @@
 #include "s21_sprintf.h"
 
+void utonbase(sc_t *dst, unsigned long long num, int base) {
+  char alphabet[17];
+  const int shift = 8; /* ASCII Difference: A - 9 */
+
+  for (int i = 0; i != base; ++i) {
+    if (i > 9) {
+      alphabet[i] = i + '0' + shift;
+    } else {
+      alphabet[i] = i + '0';
+    }
+  }
+
+  alphabet[base] = '\0';
+
+  s21_size_t cur = dst->size;
+
+  if (!num) {
+    dst->d[cur++] = '0';
+  }
+
+  for (; num; num /= 10) {
+    dst->d[cur++] = alphabet[num % 10];
+  }
+  dst->d[cur] = '\0';
+
+  dst->size = cur;
+}
+
+void reverse(char *arr) {
+  for (char *l = arr, *r = arr + s21_strlen(arr) - 1; l < r; ++l, --r) {
+    char tmp = *l;
+    *l = *r;
+    *r = tmp;
+  }
+}
+
 int intlen(long long i) {
   int intlen = 1;
 
@@ -77,6 +113,42 @@ bool addsign(sc_t *arr, conv_t *mods, bool is_negative) {
   return is_error;
 }
 
+bool addprec(sc_t *arr, conv_t *mods) {
+  int precdif = mods->prec - arr->size > 0 ? mods->prec - arr->size : 0;
+  s21_size_t new_alloc = arr->size + precdif + 1;
+
+  bool is_error = false;
+  char sign = arr->d[0];
+  bool is_sign = s21_strchr("+- ", sign);
+
+  if (precdif > 0) {
+    if (new_alloc > arr->alloc) {
+      char *buf = malloc(new_alloc * 2);
+      is_error = !buf;
+
+      if (buf) {
+        if (is_sign) *buf = sign;
+        s21_memset(buf + is_sign, '0', precdif);
+        s21_memcpy(buf + is_sign + precdif, arr->d + is_sign,
+                   arr->size - is_sign + 1);
+      }
+      if (buf) {
+        free(arr->d);
+        arr->d = buf;
+      }
+    } else {
+      for (int i = arr->size; i >= is_sign; --i) {
+        arr->d[i + precdif] = arr->d[i];
+      }
+      s21_memset(arr->d + is_sign, '0', precdif);
+    }
+
+    arr->size += precdif;
+  }
+
+  return is_error;
+}
+
 bool addwid(sc_t *arr, conv_t *mods) {
   char widfil = mods->zero ? '0' : ' ';
 
@@ -89,7 +161,7 @@ bool addwid(sc_t *arr, conv_t *mods) {
 
   if (widdif > 0) {
     if (new_alloc > arr->alloc) {
-      char *buf = malloc(new_alloc);
+      char *buf = malloc(new_alloc * 2);
       is_error = !buf;
 
       if (buf && !mods->minus) {

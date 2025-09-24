@@ -14,11 +14,16 @@
 #include "s21_std.h"
 
 /* Helpers */
-bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz);
 bool addsign(sc_t *arr, conv_t *mods, bool is_negative);
+bool addprec(sc_t *arr, conv_t *mods);
 bool addwid(sc_t *arr, conv_t *mods);
 int intlen(long long i);
 int uintlen(unsigned long long i);
+void reverse(char *arr);
+
+/* Conversions */
+bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz);
+void utonbase(sc_t *dst, unsigned long long num, int base);
 void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
               const uint32_t expbits, const bool explicit_leading_bit,
               conv_t *mods);

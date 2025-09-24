@@ -129,6 +129,10 @@ void adjust_convmods(conv_t *mods) {
       s21_strchr("cs", mods->spec)) {
     mods->zero = false;
   }
+
+  if (s21_strchr("oxXu", mods->spec)) {
+    mods->plus = false;
+  }
 }
 
 bool convert(char **scur, int *written, conv_t *mods, va_list *args) {
@@ -499,8 +503,11 @@ bool spec_xX(char **scur, int *written, conv_t *mods, va_list *args) {
 }
 
 bool spec_u(char **scur, int *written, conv_t *mods, va_list *args) {
-  bool is_error = false;
   sc_t buf = {0};
+  buf.alloc = 256;
+  buf.d = malloc(buf.alloc);
+
+  bool is_error = !buf.d;
 
   unsigned long arg = 0;
 
@@ -514,41 +521,12 @@ bool spec_u(char **scur, int *written, conv_t *mods, va_list *args) {
     is_error = true;
   }
 
-  int prec = mods->prec < 0 ? 1 : mods->prec;
-  int arglen = !arg && !mods->prec ? 0 : uintlen(arg);
-  int precdif = prec - arglen > 0 ? prec - arglen : 0;
-  int widdif =
-      mods->wid > (arglen + precdif) ? mods->wid - (arglen + precdif) : 0;
-  int needed_alloc = arglen + precdif + widdif + 1;
-
-  buf.alloc = needed_alloc;
-  buf.size = precdif + arglen;
-  buf.d = malloc(needed_alloc);
-  char *bufcur = buf.d;
-  is_error = !buf.d;
-
   if (!is_error) {
-    if (mods->prec < 0 && widdif && mods->zero) {
-      for (int i = 0; i < widdif; ++i, ++bufcur) {
-        *bufcur = '0';
-      }
-      buf.size += widdif;
+    if (arg || mods->prec) {
+      utonbase(&buf, arg, 10);
+      is_error = addprec(&buf, mods);
     }
-
-    for (int i = 0; i < precdif; ++i, ++bufcur) {
-      *bufcur = '0';
-    }
-
-    if (!arg && mods->prec != 0) {
-      *bufcur = '0';
-    }
-
-    for (char *reverse = bufcur + arglen - 1; arg; arg /= 10, --reverse) {
-      *reverse = arg % 10 + '0';
-    }
-    bufcur += arglen;
-    *bufcur = '\0';
-    is_error = addwid(&buf, mods);
+    if (!is_error) is_error = addwid(&buf, mods);
   }
 
   if (!is_error) {
