@@ -1,33 +1,6 @@
 #include "s21_sprintf.h"
 
-void utonbase(sc_t *dst, unsigned long long num, int base) {
-  char alphabet[17];
-  const int shift = 8; /* ASCII Difference: A - 9 */
-
-  for (int i = 0; i != base; ++i) {
-    if (i > 9) {
-      alphabet[i] = i + '0' + shift;
-    } else {
-      alphabet[i] = i + '0';
-    }
-  }
-
-  alphabet[base] = '\0';
-
-  s21_size_t cur = dst->size;
-
-  if (!num) {
-    dst->d[cur++] = '0';
-  }
-
-  for (; num; num /= 10) {
-    dst->d[cur++] = alphabet[num % 10];
-  }
-  dst->d[cur] = '\0';
-
-  dst->size = cur;
-}
-
+/* Miscellaneous Functions */
 void reverse(char *arr) {
   for (char *l = arr, *r = arr + s21_strlen(arr) - 1; l < r; ++l, --r) {
     char tmp = *l;
@@ -62,42 +35,7 @@ int uintlen(unsigned long long i) {
   return intlen;
 }
 
-bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz) {
-  bool is_error = false;
-  bool prec_max = false;
-  bool nterm = false;
-
-  mbstate_t state;
-  s21_memset(&state, 0, sizeof(state));
-
-  char *mbcur = mb->d;
-
-  for (s21_size_t i = 0; !is_error && !prec_max && !nterm && i < wc_sz; ++i) {
-    char mbbuf[MB_LEN_MAX + 1] = "\0";
-    int wrch = wcrtomb(mbbuf, wc[i], &state);
-
-    if (wrch == -1) {
-      is_error = 1;
-    } else if ((int)mb->size + wrch > mods->prec && mods->prec >= 0) {
-      prec_max = true;
-      *mbcur = '\0';
-      mbcur += 1;
-    } else {
-      s21_strcpy(mbcur, mbbuf);
-      if (!*mbcur && mods->spec == 's') {
-        nterm = true;
-      } else {
-        mb->size = i < wc_sz - 1 ? mb->size + wrch : mb->size;
-        mbcur += wrch;
-      }
-    }
-  }
-
-  mb->d[mb->size] = '\0';
-
-  return is_error;
-}
-
+/* String Modifier Functions */
 bool addsign(sc_t *arr, conv_t *mods, bool is_negative) {
   bool is_error = false;
 
@@ -193,6 +131,72 @@ bool addwid(sc_t *arr, conv_t *mods) {
 
     arr->size += widdif;
   }
+
+  return is_error;
+}
+
+/* Conversion Functions */
+void utonbase(sc_t *dst, unsigned long long num, int base) {
+  char alphabet[17];
+  const int shift = 8; /* ASCII Difference: A - 9 */
+
+  for (int i = 0; i != base; ++i) {
+    if (i > 9) {
+      alphabet[i] = i + '0' + shift;
+    } else {
+      alphabet[i] = i + '0';
+    }
+  }
+
+  alphabet[base] = '\0';
+
+  s21_size_t cur = dst->size;
+
+  if (!num) {
+    dst->d[cur++] = '0';
+  }
+
+  for (; num; num /= 10) {
+    dst->d[cur++] = alphabet[num % 10];
+  }
+  dst->d[cur] = '\0';
+
+  reverse(dst->d + dst->size);
+  dst->size = cur;
+}
+
+bool wcrtostr(sc_t *mb, conv_t *mods, wchar_t *wc, s21_size_t wc_sz) {
+  bool is_error = false;
+  bool prec_max = false;
+  bool nterm = false;
+
+  mbstate_t state;
+  s21_memset(&state, 0, sizeof(state));
+
+  char *mbcur = mb->d;
+
+  for (s21_size_t i = 0; !is_error && !prec_max && !nterm && i < wc_sz; ++i) {
+    char mbbuf[MB_LEN_MAX + 1] = "\0";
+    int wrch = wcrtomb(mbbuf, wc[i], &state);
+
+    if (wrch == -1) {
+      is_error = 1;
+    } else if ((int)mb->size + wrch > mods->prec && mods->prec >= 0) {
+      prec_max = true;
+      *mbcur = '\0';
+      mbcur += 1;
+    } else {
+      s21_strcpy(mbcur, mbbuf);
+      if (!*mbcur && mods->spec == 's') {
+        nterm = true;
+      } else {
+        mb->size = i < wc_sz - 1 ? mb->size + wrch : mb->size;
+        mbcur += wrch;
+      }
+    }
+  }
+
+  mb->d[mb->size] = '\0';
 
   return is_error;
 }
