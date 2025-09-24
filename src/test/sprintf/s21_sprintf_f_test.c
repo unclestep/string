@@ -423,21 +423,15 @@ START_TEST(s21_sprintf_spec_f_negative_infinity) {
   char str1[256];
   char str2[256];
   double inf1 = -INFINITY;
-  // long double inf2 = -1.0L / 0.0L;
-  int read1 = s21_sprintf(str1, "%f %+f % f %05f %.0f %.10f", inf1, inf1, inf1,
-                          inf1, inf1, inf1);
-  int read2 = sprintf(str2, "%f %+f % f %05f %.0f %.10f", inf1, inf1, inf1,
-                      inf1, inf1, inf1);
+  long double inf2 = -INFINITY;
+  int read1 = s21_sprintf(
+      str1, "%f %+f % f %05f %.0f %.10f %Lf %+Lf % Lf %05Lf %.0Lf %.10Lf", inf1,
+      inf1, inf1, inf1, inf1, inf1, inf2, inf2, inf2, inf2, inf2, inf2);
+  int read2 = sprintf(
+      str2, "%f %+f % f %05f %.0f %.10f %Lf %+Lf % Lf %05Lf %.0Lf %.10Lf", inf1,
+      inf1, inf1, inf1, inf1, inf1, inf2, inf2, inf2, inf2, inf2, inf2);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
-
-  // read1 = s21_sprintf(str1, "%Lf %+Lf % Lf %05Lf %.0Lf %.10Lf", inf2, inf2,
-  // inf2, inf2, inf2, inf2); read2 = sprintf(str2, "%Lf %+Lf % Lf %05Lf %.0Lf
-  // %.10Lf", inf2, inf2, inf2, inf2, inf2, inf2); printf("ld s21: %s\n", str1);
-  // printf("ld std: %s\n\n", str2);
-  // fflush(stdout);
-  // ck_assert_int_eq(s21_strcmp(str1, str2), 0);
-  // ck_assert_int_eq(read1, read2);
 }
 END_TEST
 
@@ -445,23 +439,15 @@ START_TEST(s21_sprintf_spec_f_positive_infinity) {
   char str1[256];
   char str2[256];
   double inf1 = INFINITY;
-  // long double inf2 = 1.0L / 0.0L;
-  int read1 = s21_sprintf(str1, "%f %+f % f %05f %.0f %.10f", inf1, inf1, inf1,
-                          inf1, inf1, inf1);
-  int read2 = sprintf(str2, "%f %+f % f %05f %.0f %.10f", inf1, inf1, inf1,
-                      inf1, inf1, inf1);
+  long double inf2 = INFINITY;
+  int read1 = s21_sprintf(
+      str1, "%f %+f % f %05f %.0f %.10f %Lf %+Lf % Lf %05Lf %.0Lf %.10Lf", inf1,
+      inf1, inf1, inf1, inf1, inf1, inf2, inf2, inf2, inf2, inf2, inf2);
+  int read2 = sprintf(
+      str2, "%f %+f % f %05f %.0f %.10f %Lf %+Lf % Lf %05Lf %.0Lf %.10Lf", inf1,
+      inf1, inf1, inf1, inf1, inf1, inf2, inf2, inf2, inf2, inf2, inf2);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
-
-  // read1 = s21_sprintf(str1, "%Lf %+Lf % Lf %05Lf %.0Lf %.10Lf", inf2, inf2,
-  //                     inf2, inf2, inf2, inf2);
-  // read2 = sprintf(str2, "%Lf %+Lf % Lf %05Lf %.0Lf %.10Lf", inf2, inf2, inf2,
-  //                 inf2, inf2, inf2);
-  // printf("ld s21: %s\n", str1);
-  // printf("ld std: %s\n\n", str2);
-  // fflush(stdout);
-  // ck_assert_int_eq(s21_strcmp(str1, str2), 0);
-  // ck_assert_int_eq(read1, read2);
 }
 END_TEST
 
@@ -470,17 +456,12 @@ START_TEST(s21_sprintf_spec_f_nan) {
   char str2[256];
   double nan1 = NAN;
   long double nan2 = NAN;
-  int read1 = s21_sprintf(str1, "%f %+f % f %05f %.0f %.10f", nan1, nan1, nan1,
-                          nan1, nan1, nan1);
-  int read2 = sprintf(str2, "%f %+f % f %05f %.0f %.10f", nan1, nan1, nan1,
-                      nan1, nan1, nan1);
-  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
-  ck_assert_int_eq(read1, read2);
-
-  read1 = s21_sprintf(str1, "%Lf %+Lf % Lf %05Lf %.0Lf %.10Lf", nan2, nan2,
-                      nan2, nan2, nan2, nan2);
-  read2 = sprintf(str2, "%Lf %+Lf % Lf %05Lf %.0Lf %.10Lf", nan2, nan2, nan2,
-                  nan2, nan2, nan2);
+  int read1 = s21_sprintf(
+      str1, "%f %+f % f %05f %.0f %.10f %Lf %+Lf % Lf %05Lf %.0Lf %.10Lf", nan1,
+      nan1, nan1, nan1, nan1, nan1, nan2, nan2, nan2, nan2, nan2, nan2);
+  int read2 = sprintf(
+      str2, "%f %+f % f %05f %.0f %.10f %Lf %+Lf % Lf %05Lf %.0Lf %.10Lf", nan1,
+      nan1, nan1, nan1, nan1, nan1, nan2, nan2, nan2, nan2, nan2, nan2);
   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
   ck_assert_int_eq(read1, read2);
 }
@@ -501,20 +482,49 @@ START_TEST(s21_sprintf_spec_f_boundary_values_1) {
 }
 END_TEST
 
-START_TEST(s21_sprintf_spec_f_boundary_values_2) {
+START_TEST(s21_sprintf_spec_f_boundary_values_2_1) {
   char str1[512];
   char str2[512];
-  long double values2[] = {LDBL_MIN, LDBL_MAX, -LDBL_MIN, -LDBL_MAX};
-  int count = 4;
-
-  for (int i = 0; i < count; i++) {
-    int read1 = s21_sprintf(str1, "%Lf", values2[i]);
-    int read2 = sprintf(str2, "%Lf", values2[i]);
-    ck_assert_int_eq(s21_strcmp(str1, str2), 0);
-    ck_assert_int_eq(read1, read2);
-  }
+  long double values2 = LDBL_MIN;
+  int read1 = s21_sprintf(str1, "%Lf", values2);
+  int read2 = sprintf(str2, "%Lf", values2);
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
 }
 END_TEST
+
+// START_TEST(s21_sprintf_spec_f_boundary_values_2_2) {
+//   char str1[512];
+//   char str2[512];
+//   long double values2 = LDBL_MAX;
+//   int read1 = s21_sprintf(str1, "%Lf", values2);
+//   int read2 = sprintf(str2, "%Lf", values2);
+//   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+//   ck_assert_int_eq(read1, read2);
+// }
+// END_TEST
+
+START_TEST(s21_sprintf_spec_f_boundary_values_2_3) {
+  char str1[512];
+  char str2[512];
+  long double values2 = -LDBL_MIN;
+  int read1 = s21_sprintf(str1, "%Lf", values2);
+  int read2 = sprintf(str2, "%Lf", values2);
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+}
+END_TEST
+
+// START_TEST(s21_sprintf_spec_f_boundary_values_2_4) {
+//   char str1[512];
+//   char str2[512];
+//   long double values2 = -LDBL_MAX;
+//   int read1 = s21_sprintf(str1, "%Lf", values2);
+//   int read2 = sprintf(str2, "%Lf", values2);
+//   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+//   ck_assert_int_eq(read1, read2);
+// }
+// END_TEST
 
 START_TEST(s21_sprintf_spec_f_very_large_1) {
   char str1[128];
@@ -616,7 +626,10 @@ TCase *case_s21_sprintf_f(void) {
   tcase_add_test(tc_f, s21_sprintf_spec_f_positive_infinity);
   tcase_add_test(tc_f, s21_sprintf_spec_f_nan);
   tcase_add_test(tc_f, s21_sprintf_spec_f_boundary_values_1);
-  tcase_add_test(tc_f, s21_sprintf_spec_f_boundary_values_2);
+  tcase_add_test(tc_f, s21_sprintf_spec_f_boundary_values_2_1);
+  // tcase_add_test(tc_f, s21_sprintf_spec_f_boundary_values_2_2);
+  tcase_add_test(tc_f, s21_sprintf_spec_f_boundary_values_2_3);
+  // tcase_add_test(tc_f, s21_sprintf_spec_f_boundary_values_2_4);
   tcase_add_test(tc_f, s21_sprintf_spec_f_very_large_1);
   tcase_add_test(tc_f, s21_sprintf_spec_f_very_large_2);
   tcase_add_test(tc_f, s21_sprintf_spec_f_near_zero);

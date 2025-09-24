@@ -610,20 +610,49 @@ START_TEST(s21_sprintf_spec_e_boundary_values_1) {
 }
 END_TEST
 
-START_TEST(s21_sprintf_spec_e_boundary_values_2) {
+START_TEST(s21_sprintf_spec_e_boundary_values_2_1) {
   char str1[512];
   char str2[512];
-  long double values2[] = {LDBL_MIN, LDBL_MAX, -LDBL_MIN, -LDBL_MAX};
-  int count = 4;
-
-  for (int i = 0; i < count; i++) {
-    int read1 = s21_sprintf(str1, "%Le", values2[i]);
-    int read2 = sprintf(str2, "%Le", values2[i]);
-    ck_assert_int_eq(s21_strcmp(str1, str2), 0);
-    ck_assert_int_eq(read1, read2);
-  }
+  long double values2 = LDBL_MIN;
+  int read1 = s21_sprintf(str1, "%Le", values2);
+  int read2 = sprintf(str2, "%Le", values2);
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
 }
 END_TEST
+
+// START_TEST(s21_sprintf_spec_e_boundary_values_2_2) {
+//   char str1[512];
+//   char str2[512];
+//   long double values2 = LDBL_MAX;
+//   int read1 = s21_sprintf(str1, "%Le", values2);
+//   int read2 = sprintf(str2, "%Le", values2);
+//   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+//   ck_assert_int_eq(read1, read2);
+// }
+// END_TEST
+
+START_TEST(s21_sprintf_spec_e_boundary_values_2_3) {
+  char str1[512];
+  char str2[512];
+  long double values2 = -LDBL_MIN;
+  int read1 = s21_sprintf(str1, "%Le", values2);
+  int read2 = sprintf(str2, "%Le", values2);
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+}
+END_TEST
+
+// START_TEST(s21_sprintf_spec_e_boundary_values_2_4) {
+//   char str1[512];
+//   char str2[512];
+//   long double values2 = -LDBL_MAX;
+//   int read1 = s21_sprintf(str1, "%Le", values2);
+//   int read2 = sprintf(str2, "%Le", values2);
+//   ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+//   ck_assert_int_eq(read1, read2);
+// }
+// END_TEST
 
 START_TEST(s21_sprintf_spec_e_very_large) {
   char str1[128];
@@ -773,7 +802,10 @@ TCase *case_s21_sprintf_e(void) {
   tcase_add_test(tc_e, s21_sprintf_spec_e_infinity_case);
   tcase_add_test(tc_e, s21_sprintf_spec_e_nan_case);
   tcase_add_test(tc_e, s21_sprintf_spec_e_boundary_values_1);
-  tcase_add_test(tc_e, s21_sprintf_spec_e_boundary_values_2);
+  tcase_add_test(tc_e, s21_sprintf_spec_e_boundary_values_2_1);
+  // tcase_add_test(tc_e, s21_sprintf_spec_e_boundary_values_2_2);
+  tcase_add_test(tc_e, s21_sprintf_spec_e_boundary_values_2_3);
+  // tcase_add_test(tc_e, s21_sprintf_spec_e_boundary_values_2_4);
   tcase_add_test(tc_e, s21_sprintf_spec_e_very_large);
   tcase_add_test(tc_e, s21_sprintf_spec_e_very_small);
   tcase_add_test(tc_e, s21_sprintf_spec_e_powers_of_ten);

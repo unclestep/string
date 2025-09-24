@@ -16,7 +16,9 @@ static inline void mpz_init(mpz_t *val) {
   val->alloc = 1;
 }
 
+/* Gets new_alloc and double it to use allocation less often */
 static inline void mpz_realloc(mpz_t *val, mp_size_t new_alloc) {
+  new_alloc = (mp_size_t)(new_alloc * 2);
   if (new_alloc > 0) {
     limb_t *new_d = (limb_t *)realloc(val->d, new_alloc * sizeof(limb_t));
 

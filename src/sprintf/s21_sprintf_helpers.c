@@ -131,11 +131,13 @@ void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
   const uint32_t bias = (1U << (expbits - 1)) - 1;
   const uint32_t ieee_sign = (bits >> (manbits + expbits)) & 1;
   const uint128_t ieee_man = bits & ((ONE << manbits) - 1);
+  const uint128_t noexpl_man =
+      ieee_man & ~((uint128_t)explicit_leading_bit << (manbits - 1));
   const uint32_t ieee_exp =
       (uint32_t)((bits >> manbits) & ((ONE << expbits) - 1));
   bool is_inf_nan = false;
 
-  if (ieee_exp == ((1U << expbits) - 1U) && ieee_man == 0) {
+  if (ieee_exp == ((1U << expbits) - 1U) && noexpl_man == 0) {
     addsign(dst, mods, ieee_sign);
     if (mods->spec == 'E' || mods->spec == 'G') {
       s21_strcpy(dst->d + dst->size, "INF");
@@ -145,7 +147,7 @@ void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
     dst->size += 3;
     is_inf_nan = true;
     mods->zero = false;
-  } else if (ieee_exp == ((1U << expbits) - 1U) && ieee_man != 0) {
+  } else if (ieee_exp == ((1U << expbits) - 1U) && noexpl_man != 0) {
 #if defined(__linux__)
     addsign(dst, mods, ieee_sign);
 #endif

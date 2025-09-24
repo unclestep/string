@@ -9,7 +9,7 @@ void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   mpz_init_set(&op1, val1), mpz_init_set(&op2, val2);
 
   mpz_t *gr, *le;
-  mpz_cmp(&op1, &op2) >= 0 ? (gr = &op1, le = &op2) : (gr = &op2, le = &op1);
+  op1.size >= op2.size ? (gr = &op1, le = &op2) : (gr = &op2, le = &op1);
 
   if (op1.size == op2.size && mpz_msb(gr) == 63 && mpz_msb(le) == 63) {
     mpz_realloc(res, gr->size + 1);
@@ -26,14 +26,15 @@ void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   }
 
   for (; cur_limb != gr->size; ++cur_limb) {
-    res->d[cur_limb] = __builtin_addcll(gr->d[cur_limb], 0U, carry, &carry);
+    res->d[cur_limb] = __builtin_addcll(gr->d[cur_limb], 0ULL, carry, &carry);
   }
 
   if (carry) {
     res->d[cur_limb] = carry;
+    res->size = cur_limb + 1;
+  } else {
+    res->size = cur_limb;
   }
-
-  res->size = carry ? cur_limb + 1 : cur_limb;
 
   mpz_clear(&op1), mpz_clear(&op2);
 }
@@ -79,6 +80,7 @@ void mpz_add(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   }
 
   if (carry) {
+    res->d[cur_limb] = 0ULL;
     mpz_setbit(res, cur_limb, 0, carry);
   }
 
@@ -108,7 +110,7 @@ void mpz_sub(mpz_t *res, const mpz_t *val1, const mpz_t *val2) {
   }
 
   for (; cur_limb != op1.size; ++cur_limb) {
-    res->d[cur_limb] = __builtin_subcll(op1.d[cur_limb], 0, borrow, &borrow);
+    res->d[cur_limb] = __builtin_subcll(op1.d[cur_limb], 0ULL, borrow, &borrow);
   }
 
   for (res->size = op1.size; res->size > 0 && !res->d[res->size - 1];
@@ -436,8 +438,8 @@ void mpf_to_scinot(sc_t *dst, mpf_t *src, int p, bool big_e) {
   /* whole[1] + dot[1] + prec[p] + e[1] + e_sign[1] + e_len[up to 3] */
   char e = big_e ? 'E' : 'e';
   char e_sign = src->exp >= 0 ? '+' : '-';
-  int e_len = abs(src->exp) < 100 ? 2 : 3;
   int e_val = abs(src->exp);
+  int e_len = e_val < 100 ? 2 : floor(log10(e_val)) + 1;
 
   int fracs = src->exp >= 0 ? src->fig - 1 : src->fig - e_val - 1;
   int pdif = p > fracs ? p - fracs : 0;

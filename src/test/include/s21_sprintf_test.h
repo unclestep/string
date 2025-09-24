@@ -2,6 +2,7 @@
 #define S21_SPRINTF_TEST_H
 
 #include <check.h>
+#include <float.h>
 #include <limits.h>
 #include <locale.h>
 #include <stdio.h>
