@@ -9,6 +9,12 @@ void reverse(char *arr) {
   }
 }
 
+void shift(char *arr, s21_size_t shift) {
+  for (int i = s21_strlen(arr); i >= 0; --i) {
+    arr[i + shift] = arr[i];
+  }
+}
+
 int intlen(long long i) {
   int intlen = 1;
 
@@ -39,25 +45,28 @@ int uintlen(unsigned long long i) {
 bool addsign(sc_t *arr, conv_t *mods, bool is_negative) {
   bool is_error = false;
 
-  if (is_negative) {
-    arr->d[arr->size++] = '-';
-  } else if (mods->space) {
-    arr->d[arr->size++] = ' ';
-  } else if (mods->plus) {
-    arr->d[arr->size++] = '+';
-  }
-  arr->d[arr->size] = '\0';
+  if (is_negative || mods->plus || mods->space) {
+    if (arr->size) shift(arr->d, 1);
+    arr->size += 1;
 
+    if (is_negative) {
+      arr->d[0] = '-';
+    } else if (mods->space) {
+      arr->d[0] = ' ';
+    } else if (mods->plus) {
+      arr->d[0] = '+';
+    }
+  }
   return is_error;
 }
 
 bool addprec(sc_t *arr, conv_t *mods) {
-  int precdif = mods->prec - arr->size > 0 ? mods->prec - arr->size : 0;
+  int precdif = mods->prec > (int)arr->size ? mods->prec - (int)arr->size : 0;
   s21_size_t new_alloc = arr->size + precdif + 1;
 
   bool is_error = false;
   char sign = arr->d[0];
-  bool is_sign = s21_strchr("+- ", sign);
+  int is_sign = arr->size && s21_strchr("+- ", sign);
 
   if (precdif > 0) {
     if (new_alloc > arr->alloc) {
@@ -68,7 +77,8 @@ bool addprec(sc_t *arr, conv_t *mods) {
         if (is_sign) *buf = sign;
         s21_memset(buf + is_sign, '0', precdif);
         s21_memcpy(buf + is_sign + precdif, arr->d + is_sign,
-                   arr->size - is_sign + 1);
+                   arr->size - is_sign);
+        buf[arr->size + precdif] = '\0';
       }
       if (buf) {
         free(arr->d);
@@ -79,6 +89,7 @@ bool addprec(sc_t *arr, conv_t *mods) {
         arr->d[i + precdif] = arr->d[i];
       }
       s21_memset(arr->d + is_sign, '0', precdif);
+      arr->d[arr->size + precdif] = '\0';
     }
 
     arr->size += precdif;
@@ -138,13 +149,16 @@ bool addwid(sc_t *arr, conv_t *mods) {
 /* Conversion Functions */
 void utonbase(sc_t *dst, unsigned long long num, conv_t *mods) {
   int base = 10;
-  if (mods->spec == 'o')
+  int shift = 0;
+
+  if (mods->spec == 'o') {
     base = 8;
-  else if (mods->spec == 'x' || mods->spec == 'X')
+  } else if (mods->spec == 'x' || mods->spec == 'X') {
     base = 16;
+    shift = mods->spec == 'x' ? 39 : 7;
+  }
 
   char alphabet[17];
-  const int shift = 8; /* ASCII Difference: A - 9 */
 
   for (int i = 0; i != base; ++i) {
     if (i > 9) {
@@ -162,8 +176,8 @@ void utonbase(sc_t *dst, unsigned long long num, conv_t *mods) {
     dst->d[cur++] = '0';
   }
 
-  for (; num; num /= 10) {
-    dst->d[cur++] = alphabet[num % 10];
+  for (; num; num /= base) {
+    dst->d[cur++] = alphabet[num % base];
   }
   dst->d[cur] = '\0';
 

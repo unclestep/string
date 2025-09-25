@@ -1,5 +1,16 @@
 #include "s21_sprintf.h"
 
+#define getintarg(INT_TYPE, ARG)                                          \
+  do {                                                                    \
+    if (mods->len == 'h') {                                               \
+      ARG = (INT_TYPE long)((INT_TYPE short)va_arg(*args, INT_TYPE int)); \
+    } else if (mods->len == 'l') {                                        \
+      ARG = (INT_TYPE long)va_arg(*args, INT_TYPE long);                  \
+    } else if (mods->len == -1) {                                         \
+      ARG = (INT_TYPE long)va_arg(*args, INT_TYPE int);                   \
+    }                                                                     \
+  } while (0)
+
 int s21_sprintf(char *str, const char *format, ...) {
   va_list args;
   va_start(args, format);
@@ -132,6 +143,7 @@ void adjust_convmods(conv_t *mods) {
 
   if (s21_strchr("oxXu", mods->spec)) {
     mods->plus = false;
+    mods->space = false;
   }
 }
 
@@ -140,7 +152,8 @@ bool convert(char **scur, int *written, conv_t *mods, va_list *args) {
 
   switch (mods->spec) {
     case '%':
-      **scur = '%';
+      *(*scur)++ = '%';
+      ++*written;
       break;
     case 'c':
       is_error = spec_c(scur, written, mods, args);
@@ -150,17 +163,11 @@ bool convert(char **scur, int *written, conv_t *mods, va_list *args) {
       break;
     case 'd':
     case 'i':
-      is_error = spec_di(scur, written, mods, args);
-      break;
     case 'o':
-      is_error = spec_o(scur, written, mods, args);
-      break;
     case 'x':
     case 'X':
-      is_error = spec_xX(scur, written, mods, args);
-      break;
     case 'u':
-      is_error = spec_u(scur, written, mods, args);
+      is_error = spec_dioxXu(scur, written, mods, args);
       break;
     case 'f':
     case 'e':
@@ -275,258 +282,67 @@ bool spec_s(char **scur, int *written, conv_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_di(char **scur, int *written, conv_t *mods, va_list *args) {
-  bool is_error = false;
-  sc_t buf = {0};
-
-  long long arg = 0;
-
-  if (mods->len == 'h') {
-    arg = (long long)((short)va_arg(*args, int));
-  } else if (mods->len == 'l') {
-    arg = (long long)va_arg(*args, long);
-  } else if (mods->len == -1) {
-    arg = (long long)va_arg(*args, int);
-  } else {
-    is_error = true;
-  }
-
-  int prec = mods->prec < 0 ? 1 : mods->prec;
-  int arglen = !arg && !mods->prec ? 0 : intlen(arg);
-  int precdif = prec - arglen > 0 ? prec - arglen : 0;
-  int sign = arg < 0 || mods->plus || mods->space ? 1 : 0;
-  int widdif = mods->wid > (arglen + precdif + sign)
-                   ? mods->wid - (arglen + precdif + sign)
-                   : 0;
-  int needed_alloc = arglen + precdif + sign + widdif + 1;
-
-  buf.alloc = needed_alloc;
-  buf.size = precdif + sign + arglen;
-  buf.d = malloc(needed_alloc);
-  char *bufcur = buf.d;
-  is_error = !buf.d;
-
-  if (!is_error) {
-    if (arg < 0) {
-      *bufcur++ = '-';
-      arg = llabs(arg);
-    } else if (mods->space) {
-      *bufcur++ = ' ';
-    } else if (mods->plus) {
-      *bufcur++ = '+';
-    }
-
-    // if (mods->prec < 0 && widdif && mods->zero) {
-    //   for (int i = 0; i < widdif; ++i, ++bufcur) {
-    //     *bufcur = '0';
-    //   }
-    //   buf.size += widdif;
-    // }
-
-    for (int i = 0; i < precdif; ++i, ++bufcur) {
-      *bufcur = '0';
-    }
-
-    if (!arg && mods->prec != 0) {
-      *bufcur = '0';
-    }
-
-    for (char *reverse = bufcur + arglen - 1; arg; arg /= 10, --reverse) {
-      *reverse = arg % 10 + '0';
-    }
-    bufcur += arglen;
-    *bufcur = '\0';
-    is_error = addwid(&buf, mods);
-  }
-
-  if (!is_error) {
-    for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
-      **scur = buf.d[i];
-    }
-    *written += buf.size;
-  }
-
-  if (buf.d) {
-    free(buf.d);
-  }
-
-  return is_error;
-}
-
-bool spec_o(char **scur, int *written, conv_t *mods, va_list *args) {
-  bool is_error = false;
-  sc_t buf = {0};
-
-  unsigned long arg = 0;
-
-  if (mods->len == 'h') {
-    arg = (unsigned long)((unsigned short)va_arg(*args, unsigned));
-  } else if (mods->len == 'l') {
-    arg = (unsigned long)va_arg(*args, unsigned long);
-  } else if (mods->len == -1) {
-    arg = (unsigned long)va_arg(*args, unsigned);
-  } else {
-    is_error = true;
-  }
-
-  int arglen = 0;
-  char tmp[32] = {0};
-  char *tcur = tmp;
-
-  if (!is_error) {
-    if (!arg && mods->prec != 0) {
-      *tcur++ = '0';
-      arglen = 1;
-    }
-
-    unsigned long decarg = arg;
-    for (; decarg; decarg /= 8, ++tcur, ++arglen) {
-      *tcur = decarg % 8 + '0';
-    }
-    *tcur = '\0';
-  }
-
-  int prec = mods->prec < 0 ? 1 : mods->prec;
-  int precdif =
-      (prec - arglen > 0) || (!arg && mods->prec) ? prec - arglen : mods->hash;
-  int widdif =
-      mods->wid > (arglen + precdif) ? mods->wid - (arglen + precdif) : 0;
-  int needed_alloc = arglen + precdif + widdif + 1;
-  buf.alloc = needed_alloc;
-  buf.size = precdif + arglen;
-  buf.d = malloc(needed_alloc);
-  char *bufcur = buf.d;
-  is_error = !buf.d;
-
-  if (!is_error) {
-    for (int i = 0; i < precdif; ++i, ++bufcur) {
-      *bufcur = '0';
-    }
-
-    for (tcur = !*tcur ? tcur - 1 : tcur; tcur >= tmp; --tcur, ++bufcur) {
-      *bufcur = *tcur;
-    }
-    *bufcur = '\0';
-    is_error = addwid(&buf, mods);
-  }
-
-  if (!is_error) {
-    for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
-      **scur = buf.d[i];
-    }
-    *written += buf.size;
-  }
-
-  if (buf.d) {
-    free(buf.d);
-  }
-
-  return is_error;
-}
-
-bool spec_xX(char **scur, int *written, conv_t *mods, va_list *args) {
-  bool is_error = false;
-  sc_t buf = {0};
-
-  unsigned long arg = 0;
-
-  if (mods->len == 'h') {
-    arg = (unsigned long)((unsigned short)va_arg(*args, unsigned));
-  } else if (mods->len == 'l') {
-    arg = (unsigned long)va_arg(*args, unsigned long);
-  } else if (mods->len == -1) {
-    arg = (unsigned long)va_arg(*args, unsigned);
-  } else {
-    is_error = true;
-  }
-
-  int arglen = 0;
-  char tmp[32] = {0};
-  char *tcur = tmp;
-
-  const char *alphabet =
-      mods->spec == 'x' ? "0123456789abcdef" : "0123456789ABCDEF";
-
-  if (!arg && mods->prec != 0) {
-    *tcur++ = '0';
-    arglen = 1;
-  }
-
-  unsigned long decarg = arg;
-  for (; decarg; decarg /= 16, ++tcur, ++arglen) {
-    *tcur = alphabet[decarg % 16];
-  }
-  *tcur = '\0';
-
-  int prefix = mods->hash && arg ? 2 : 0;
-  int prec = mods->prec < 0 ? 1 : mods->prec;
-  int precdif = prec - arglen > 0 ? prec - arglen : 0;
-  int widdif = mods->wid > (arglen + precdif + prefix)
-                   ? mods->wid - (arglen + precdif + prefix)
-                   : 0;
-  int needed_alloc = arglen + precdif + widdif + prefix + 1;
-  buf.alloc = needed_alloc;
-  buf.size = precdif + arglen + prefix;
-  buf.d = malloc(needed_alloc);
-  char *bufcur = buf.d;
-  is_error = !buf.d;
-
-  if (!is_error) {
-    if (mods->hash && arg) {
-      *bufcur++ = '0';
-      *bufcur++ = mods->spec == 'x' ? 'x' : 'X';
-    }
-
-    for (int i = 0; i < precdif; ++i, ++bufcur) {
-      *bufcur = '0';
-    }
-
-    for (tcur = !*tcur ? tcur - 1 : tcur; tcur >= tmp; --tcur, ++bufcur) {
-      *bufcur = *tcur;
-    }
-    *bufcur = '\0';
-    is_error = addwid(&buf, mods);
-  }
-
-  if (!is_error) {
-    for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
-      **scur = buf.d[i];
-    }
-    *written += buf.size;
-  }
-
-  if (buf.d) {
-    free(buf.d);
-  }
-
-  return is_error;
-}
-
-bool spec_u(char **scur, int *written, conv_t *mods, va_list *args) {
+bool spec_dioxXu(char **scur, int *written, conv_t *mods, va_list *args) {
   sc_t buf = {0};
   buf.alloc = 256;
   buf.d = malloc(buf.alloc);
 
   bool is_error = !buf.d;
+  bool is_negative = false;
+  bool hash_o = mods->hash && mods->spec == 'o';
+  bool hash_x = mods->hash && (mods->spec == 'x' || mods->spec == 'X');
+  mods->prec = mods->prec < 0 ? 1 : mods->prec;
 
   unsigned long arg = 0;
 
-  if (mods->len == 'h') {
-    arg = (unsigned long)((unsigned short)va_arg(*args, unsigned));
-  } else if (mods->len == 'l') {
-    arg = (unsigned long)va_arg(*args, unsigned long);
-  } else if (mods->len == -1) {
-    arg = (unsigned long)va_arg(*args, unsigned);
-  } else {
-    is_error = true;
+  /* Signed integers */
+  if (s21_strchr("di", mods->spec)) {
+    long sarg = 0;
+    getintarg(signed, sarg);
+    is_negative = sarg < 0;
+    arg = sarg < 0 ? labs(sarg + 1) + 1 : sarg;
+  } else { /* Unsigned integers */
+    getintarg(unsigned, arg);
   }
 
   if (!is_error) {
+    /* For the case when arg == 0 && prec == 0, it won't work */
+    /* Works when:
+     * 1) Arg equals zero but precision doesn't equal zero
+     * 2) Precision is specified as zero but there's an arg */
     if (arg || mods->prec) {
       utonbase(&buf, arg, mods);
-      is_error = addprec(&buf, mods);
     }
-    if (!is_error) is_error = addwid(&buf, mods);
+
+    /* NOTE: Only for specifier %o and its # */
+    /* For zero (prec != 0) or when mods->prec > buf.size, it won't work */
+    /* Works when:
+     * 1) Number of digits is less or equals precision (21 -> 021)
+     * 2) Arg equals zero and precision equals zero (buf.size == prec) */
+    if (hash_o &&
+        ((!arg && !mods->prec) || (arg && mods->prec <= (int)buf.size))) {
+      mods->prec = buf.size + 1;
+    }
+
+    is_error = addprec(&buf, mods);
+  }
+
+  /* NOTE: Only for specifiers %x %X and its # */
+  /* Works when there's an arg */
+  if (!is_error && hash_x && arg) {
+    shift(buf.d, 2);
+    buf.d[0] = '0';
+    buf.d[1] = mods->spec == 'x' ? 'x' : 'X';
+    buf.size += 2;
+  }
+
+  /* NOTE: Only for signed integers */
+  if (!is_error && s21_strchr("di", mods->spec)) {
+    is_error = addsign(&buf, mods, is_negative);
+  }
+
+  if (!is_error) {
+    is_error = addwid(&buf, mods);
   }
 
   if (!is_error) {

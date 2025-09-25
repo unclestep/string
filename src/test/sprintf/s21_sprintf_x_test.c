@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include "s21_sprintf_test.h"
 
 START_TEST(s21_sprintf_spec_xX_default) {

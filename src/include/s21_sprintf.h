@@ -16,6 +16,7 @@
 /* Helpers */
 /* Miscellaneous Functions */
 void reverse(char *arr);
+void shift(char *arr, s21_size_t shift);
 int intlen(long long i);
 int uintlen(unsigned long long i);
 
@@ -40,10 +41,7 @@ bool convert(char **scur, int *written, conv_t *mods, va_list *args);
 
 bool spec_c(char **scur, int *written, conv_t *mods, va_list *args);
 bool spec_s(char **scur, int *written, conv_t *mods, va_list *args);
-bool spec_di(char **scur, int *written, conv_t *mods, va_list *args);
-bool spec_o(char **scur, int *written, conv_t *mods, va_list *args);
-bool spec_xX(char **scur, int *written, conv_t *mods, va_list *args);
-bool spec_u(char **scur, int *written, conv_t *mods, va_list *args);
+bool spec_dioxXu(char **scur, int *written, conv_t *mods, va_list *args);
 bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args);
 bool spec_n(char **scur, int *written, conv_t *mods, va_list *args);
 bool spec_p(char **scur, int *written, conv_t *mods, va_list *args);

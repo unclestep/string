@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include "s21_sprintf_test.h"
 
 START_TEST(s21_sprintf_spec_o_default) {
@@ -7,7 +9,6 @@ START_TEST(s21_sprintf_spec_o_default) {
   for (unsigned i = 0; i <= 12345; ++i) {
     int read1 = s21_sprintf(str1, "%o", i);
     int read2 = sprintf(str2, "%o", i);
-
     ck_assert_int_eq(s21_strcmp(str1, str2), 0);
     ck_assert_int_eq(read1, read2);
   }
@@ -418,6 +419,7 @@ END_TEST
 
 TCase *case_s21_sprintf_o(void) {
   TCase *tc_o = tcase_create("s21_sprintf_o");
+
   tcase_add_test(tc_o, s21_sprintf_spec_o_default);
   tcase_add_test(tc_o, s21_sprintf_spec_o_flags_1);
   tcase_add_test(tc_o, s21_sprintf_spec_o_flags_2);
