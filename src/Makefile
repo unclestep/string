@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Werror -Wextra -std=c11 -g -O0 -ggdb3
+CFLAGS = -Wall -Werror -Wextra -std=c11
 CFLAGS += $(SPECIAL)
 CC = gcc
 LIBS = -lcheck
@@ -13,7 +13,7 @@ TARGET_LIB = $(TARGET).a
 INC = include
 STD = std
 SPRINTF = sprintf
-SSCANF =  sscanf
+SSCANF = sscanf
 BONUS = bonus
 GMP = gmp
 

@@ -376,6 +376,20 @@ START_TEST(s21_sprintf_spec_s_empty_wide_width) {
 }
 END_TEST
 
+START_TEST(s21_sprintf_spec_s_percent) {
+  setlocale(LC_ALL, LOCALE);
+  char str1[128];
+  char str2[128];
+
+  int read1 = s21_sprintf(str1, "%%ab%%c%3s%%def", "\0");
+  int read2 = sprintf(str2, "%%ab%%c%3s%%def", "\0");
+
+  ck_assert_int_eq(s21_strcmp(str1, "%ab%c   %def"), 0);
+  ck_assert_int_eq(s21_strcmp(str1, str2), 0);
+  ck_assert_int_eq(read1, read2);
+}
+END_TEST
+
 TCase *case_s21_sprintf_s(void) {
   TCase *tc_s = tcase_create("s21_sprintf_s");
   tcase_add_test(tc_s, s21_sprintf_spec_s_default_one_string);
@@ -405,6 +419,7 @@ TCase *case_s21_sprintf_s(void) {
   tcase_add_test(tc_s, s21_sprintf_spec_s_empty_default_width);
   tcase_add_test(tc_s, s21_sprintf_spec_s_empty_wide);
   tcase_add_test(tc_s, s21_sprintf_spec_s_empty_wide_width);
+  tcase_add_test(tc_s, s21_sprintf_spec_s_percent);
 
   return tc_s;
 }
