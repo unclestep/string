@@ -21,9 +21,8 @@ TCase *case_s21_sprintf_u(void);
 TCase *case_s21_sprintf_f(void);
 TCase *case_s21_sprintf_e(void);
 TCase *case_s21_sprintf_g(void);
-// TCase *case_s21_sprintf_n(void);
+TCase *case_s21_sprintf_n(void);
 TCase *case_s21_sprintf_p(void);
-// TCase *case_s21_sprintf_n(void);
 
 Suite *suite_s21_sprintf_test(void);
 

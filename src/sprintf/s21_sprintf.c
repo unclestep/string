@@ -177,7 +177,7 @@ bool convert(char **scur, int *written, conv_t *mods, va_list *args) {
       is_error = spec_feEgG(scur, written, mods, args);
       break;
     case 'n':
-      // is_error = spec_n(scur, written, mods, args);
+      is_error = spec_n(scur, written, mods, args);
       break;
     case 'p':
       is_error = spec_p(scur, written, mods, args);
@@ -313,7 +313,9 @@ bool spec_dioxXu(char **scur, int *written, conv_t *mods, va_list *args) {
     if (arg || mods->prec) {
       utonbase(&buf, arg, mods);
     }
+  }
 
+  if (!is_error) {
     /* NOTE: Only for specifier %o and its # */
     /* For zero (prec != 0) or when mods->prec > buf.size, it won't work */
     /* Works when:
@@ -359,69 +361,6 @@ bool spec_dioxXu(char **scur, int *written, conv_t *mods, va_list *args) {
   return is_error;
 }
 
-bool spec_p(char **scur, int *written, conv_t *mods, va_list *args) {
-  uintptr_t arg = (uintptr_t)va_arg(*args, void *);
-
-  int arglen = 0;
-  char tmp[32] = {0};
-  char *tcur = tmp;
-
-  bool is_error = false;
-
-  const char *alphabet = "0123456789abcdef";
-  unsigned long decarg = arg;
-
-  if (!arg) {
-#if defined(__APPLE__)
-    *tcur++ = '0';
-    *tcur++ = 'x';
-    *tcur++ = '0';
-    arglen = 3;
-#elif defined(__linux__) && !defined(__GLIBC__)
-    *tcur++ = '0';
-    arglen = 1;
-#elif defined(__linux__) && defined(__GLIBC__)
-    *tcur++ = ')';
-    *tcur++ = 'l';
-    *tcur++ = 'i';
-    *tcur++ = 'n';
-    *tcur++ = '(';
-    arglen = 5;
-#endif
-  }
-
-  for (; decarg; decarg /= 16, ++tcur, ++arglen) {
-    *tcur = alphabet[decarg % 16];
-  }
-
-  if (arg) {
-    *tcur++ = 'x';
-    *tcur++ = '0';
-    arglen += 2;
-  }
-
-  int widdif = mods->wid - arglen > 0 ? mods->wid - arglen : 0;
-  *written += arglen + widdif;
-
-  if (widdif && !mods->minus) {
-    for (int i = 0; i < widdif; ++i, ++*scur) {
-      **scur = ' ';
-    }
-  }
-
-  for (tcur = tmp + arglen - 1; tcur >= tmp; --tcur, ++*scur) {
-    **scur = *tcur;
-  }
-
-  if (widdif && mods->minus) {
-    for (int i = 0; i < widdif; ++i, ++*scur) {
-      **scur = ' ';
-    }
-  }
-
-  return is_error;
-}
-
 bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
   sc_t buf = {0};
   buf.alloc = 256;
@@ -442,12 +381,16 @@ bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
              mods);
   }
 
-  addwid(&buf, mods);
-
-  for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
-    **scur = buf.d[i];
+  if (!is_error) {
+    is_error = addwid(&buf, mods);
   }
-  *written += buf.size;
+
+  if (!is_error) {
+    for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
+      **scur = buf.d[i];
+    }
+    *written += buf.size;
+  }
 
   if (buf.d) {
     free(buf.d);
@@ -457,6 +400,7 @@ bool spec_feEgG(char **scur, int *written, conv_t *mods, va_list *args) {
 }
 
 bool spec_n(char **scur, int *written, conv_t *mods, va_list *args) {
+  UNUSED(scur);
   bool is_error = false;
 
   if (mods->len == 'h') {
@@ -468,11 +412,52 @@ bool spec_n(char **scur, int *written, conv_t *mods, va_list *args) {
   } else if (mods->len == -1) {
     int *arg = va_arg(*args, int *);
     *arg = (int)*written;
-  } else {
-    is_error = true;
   }
 
-  ++*scur;
+  return is_error;
+}
+
+bool spec_p(char **scur, int *written, conv_t *mods, va_list *args) {
+  uintptr_t arg = (uintptr_t)va_arg(*args, void *);
+
+  sc_t buf = {0};
+  buf.alloc = 256;
+  buf.d = malloc(buf.alloc);
+  bool is_error = !buf.d;
+
+  if (!is_error) {
+    if (!arg) {
+#if defined(__APPLE__)
+      s21_strcpy(buf.d, "0x0");
+      buf.size += 3;
+#elif defined(__linux__) && !defined(__GLIBC__)
+      buf.d[0] = '0';
+      buf.size += 1;
+#elif defined(__linux__) && defined(__GLIBC__)
+      s21_strcpy(buf.d, "(nil)");
+      buf.size += 5;
+#endif
+    } else {
+      s21_strcpy(buf.d, "0x");
+      buf.size += 2;
+      utonbase(&buf, arg, mods);
+    }
+  }
+
+  if (!is_error) {
+    is_error = addwid(&buf, mods);
+  }
+
+  if (!is_error) {
+    for (s21_size_t i = 0; i < buf.size; ++i, ++*scur) {
+      **scur = buf.d[i];
+    }
+    *written += buf.size;
+  }
+
+  if (buf.d) {
+    free(buf.d);
+  }
 
   return is_error;
 }

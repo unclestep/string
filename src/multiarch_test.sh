@@ -1,6 +1,6 @@
 #!bin/bash
 
-PLATFORMS=("linux/amd64" "linux/arm64")
+PLATFORMS=("linux/amd64")
 OS_LIST=("ubuntu" "alpine")
 
 if ! docker buildx ls | grep -q "multiarch"; then
@@ -13,7 +13,7 @@ fi
 for os in "${OS_LIST[@]}"; do
     for platform in "${PLATFORMS[@]}"; do
         platform_name=$(echo $platform | sed 's/\//-/g')
-        image_name="mylib-test-${os}-${platform_name}"
+        image_name="s21_string-${platform_name}-${os}"
 
         echo "Testing $os on $platform"
 

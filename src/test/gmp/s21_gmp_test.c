@@ -1,7 +1,5 @@
 #include "s21_gmp_test.h"
 
-#include <math.h>
-
 START_TEST(mpz_msb_all_ind) {
   mpz_t op;
   mpz_init(&op);
@@ -41,6 +39,8 @@ START_TEST(mpz_bitwise_and) {
   mpz_init_set_ull(&op2, 0xFFFFULL);
   mpz_init(&rop);
   mpz_init_set_ull(&exp, 0xABCDULL);
+
+  mpz_and(&rop, &op1, &op2);
 
   ck_assert_int_eq(mpz_cmp(&rop, &exp), 0);
   ck_assert_int_eq(rop.size, 1);
@@ -2508,6 +2508,7 @@ Suite *suite_s21_gmp_test(void) {
   tcase_add_test(tc_to_scinot, mpf_to_scinot_zero_prec0);
 
   TCase *tc_other = tcase_create("s21_gmp_other");
+  suite_add_tcase(s, tc_other);
   tcase_add_test(tc_other, mpz_msb_all_ind);
   tcase_add_test(tc_other, mpz_exactsizeinbase10_big_scope);
   tcase_add_test(tc_other, mpz_bitwise_and);

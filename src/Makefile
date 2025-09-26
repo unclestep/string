@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Werror -Wextra -std=c11 -g -O0
+CFLAGS = -Wall -Werror -Wextra -std=c11 -g -O0 -ggdb3
 CFLAGS += $(SPECIAL)
 CC = gcc
 LIBS = -lcheck
@@ -60,6 +60,3 @@ clang:
 valgrind:
 	valgrind --leak-check=full --tool=memcheck ./$(BUILD_DIR)/$(TEST)/test.out > $(BUILD_DIR)/$(TEST)/memory_report.txt 2>&1
 	less $(BUILD_DIR)/$(TEST)/memory_report.txt
-	
-print-test-srcs:
-	@echo $(TEST_SRCS)

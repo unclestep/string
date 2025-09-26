@@ -15,32 +15,6 @@ void shift(char *arr, s21_size_t shift) {
   }
 }
 
-int intlen(long long i) {
-  int intlen = 1;
-
-  if (i == LLONG_MIN) {
-    i = LLONG_MAX;
-  } else {
-    i = llabs(i);
-  }
-
-  if (i != 0) {
-    intlen = (int)log10l(i) + 1;
-  }
-
-  return intlen;
-}
-
-int uintlen(unsigned long long i) {
-  int intlen = 1;
-
-  if (i != 0) {
-    intlen = (int)log10l(i) + 1;
-  }
-
-  return intlen;
-}
-
 /* String Modifier Functions */
 bool addsign(sc_t *arr, conv_t *mods, bool is_negative) {
   bool is_error = false;
@@ -153,9 +127,9 @@ void utonbase(sc_t *dst, unsigned long long num, conv_t *mods) {
 
   if (mods->spec == 'o') {
     base = 8;
-  } else if (mods->spec == 'x' || mods->spec == 'X') {
+  } else if (s21_strchr("xXp", mods->spec)) {
     base = 16;
-    shift = mods->spec == 'x' ? 39 : 7;
+    shift = s21_strchr("xp", mods->spec) ? 39 : 7;
   }
 
   char alphabet[17];
@@ -285,8 +259,6 @@ void flttostr(sc_t *dst, const uint128_t bits, const uint32_t manbits,
       mpman.size = 2;
       mpman.d[1] = upper;
     }
-    // printf("Before calc:\nLower: %llu\nUpper: %llu\nExp: %d\n", lower, upper,
-    //        e);
 
     int prec = mods->prec < 0 ? 6 : mods->prec;
     if (!prec && (mods->spec == 'g' || mods->spec == 'G')) prec = 1;

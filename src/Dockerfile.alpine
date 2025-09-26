@@ -6,6 +6,7 @@ RUN apk add --no-cache \
     check-dev \
     musl-locales \
     subunit-dev \
+    valgrind \
     && rm -rf /var/cache/apk/*
 
 ENV LANGUAGE=en_US.UTF-8

@@ -2,16 +2,17 @@
 
 Suite *suite_s21_sprintf_test(void) {
   Suite *s = suite_create("s21_sprintf_test");
-  // suite_add_tcase(s, case_s21_sprintf_c());
-  // suite_add_tcase(s, case_s21_sprintf_s());
+  suite_add_tcase(s, case_s21_sprintf_c());
+  suite_add_tcase(s, case_s21_sprintf_s());
   suite_add_tcase(s, case_s21_sprintf_di());
-  // suite_add_tcase(s, case_s21_sprintf_o());
-  // suite_add_tcase(s, case_s21_sprintf_x());
-  // suite_add_tcase(s, case_s21_sprintf_u());
-  // suite_add_tcase(s, case_s21_sprintf_f());
-  // suite_add_tcase(s, case_s21_sprintf_e());
-  // suite_add_tcase(s, case_s21_sprintf_g());
-  // suite_add_tcase(s, case_s21_sprintf_p());
+  suite_add_tcase(s, case_s21_sprintf_o());
+  suite_add_tcase(s, case_s21_sprintf_x());
+  suite_add_tcase(s, case_s21_sprintf_u());
+  suite_add_tcase(s, case_s21_sprintf_f());
+  suite_add_tcase(s, case_s21_sprintf_e());
+  suite_add_tcase(s, case_s21_sprintf_g());
+  suite_add_tcase(s, case_s21_sprintf_n());
+  suite_add_tcase(s, case_s21_sprintf_p());
 
   return s;
 }

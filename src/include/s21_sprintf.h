@@ -13,12 +13,12 @@
 #include "s21_gmp.h"
 #include "s21_std.h"
 
+#define UNUSED(x) (void)(x)
+
 /* Helpers */
 /* Miscellaneous Functions */
 void reverse(char *arr);
 void shift(char *arr, s21_size_t shift);
-int intlen(long long i);
-int uintlen(unsigned long long i);
 
 /* String Modifier Functions */
 bool addsign(sc_t *arr, conv_t *mods, bool is_negative);

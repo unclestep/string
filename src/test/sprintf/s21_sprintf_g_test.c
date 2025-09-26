@@ -509,8 +509,8 @@ START_TEST(s21_sprintf_spec_g_mixed_case) {
 END_TEST
 
 START_TEST(s21_sprintf_spec_g_negative_infinity) {
-  char str1[256];
-  char str2[256];
+  char str1[512];
+  char str2[512];
   double inf1 = -INFINITY;
   long double inf2 = -INFINITY;
   int read1 = s21_sprintf(
@@ -525,8 +525,8 @@ START_TEST(s21_sprintf_spec_g_negative_infinity) {
 END_TEST
 
 START_TEST(s21_sprintf_spec_g_positive_infinity) {
-  char str1[256];
-  char str2[256];
+  char str1[512];
+  char str2[512];
   double inf1 = INFINITY;
   long double inf2 = INFINITY;
   int read1 = s21_sprintf(
@@ -541,8 +541,8 @@ START_TEST(s21_sprintf_spec_g_positive_infinity) {
 END_TEST
 
 START_TEST(s21_sprintf_spec_g_nan) {
-  char str1[256];
-  char str2[256];
+  char str1[512];
+  char str2[512];
   double nan1 = NAN;
   long double nan2 = NAN;
   int read1 = s21_sprintf(
@@ -758,6 +758,7 @@ END_TEST
 
 TCase *case_s21_sprintf_g(void) {
   TCase *tc_g = tcase_create("s21_sprintf_g");
+  // tcase_set_timeout(tc_g, 30);
 
   tcase_add_test(tc_g, s21_sprintf_spec_g_basic_decimal);
   tcase_add_test(tc_g, s21_sprintf_spec_g_basic_exponential);
