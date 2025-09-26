@@ -75,12 +75,12 @@ bool addprec(sc_t *arr, conv_t *mods) {
 bool addwid(sc_t *arr, conv_t *mods) {
   char widfil = mods->zero ? '0' : ' ';
 
-  int widdif = mods->wid - arr->size > 0 ? mods->wid - arr->size : 0;
+  int widdif = mods->wid > (int)arr->size ? mods->wid - (int)arr->size : 0;
   s21_size_t new_alloc = arr->size + widdif + 1;
 
   bool is_error = false;
   char sign = arr->d[0];
-  bool is_sign = s21_strchr("+- ", sign) && mods->zero;
+  bool is_sign = arr->size && s21_strchr("+- ", sign) && mods->zero;
 
   if (widdif > 0) {
     if (new_alloc > arr->alloc) {
