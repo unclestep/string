@@ -1,6 +1,8 @@
 #ifndef S21_STD_H
 #define S21_STD_H
 
+#include <stdlib.h>
+
 #include "s21_defines.h"
 
 void *s21_memchr(const void *str, int c, s21_size_t n);
