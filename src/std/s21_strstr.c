@@ -10,7 +10,10 @@ char *s21_strstr(const char *haystack, const char *needle) {
     for (const char *ncur = needle; match && *hr && *ncur; ++hr, ++ncur) {
       match = *hr == *ncur;
     }
-    hl = !match || !*hr ? hr : hl;
+
+    if (!match || (!match && !*hr)) {
+      hl = hr;
+    }
   }
 
   return *hl ? (char *)hl : s21_NULL;

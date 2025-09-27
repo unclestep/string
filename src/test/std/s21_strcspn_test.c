@@ -4,13 +4,15 @@ START_TEST(s21_strcspn_forbid_end) {
   const char *str1 = "abcdef$#*";
   const char *str2 = "$#*";
   ck_assert_int_eq(s21_strcspn(str1, str2), 6);
+  ck_assert_int_eq(s21_strcspn(str1, str2), strcspn(str1, str2));
 }
 END_TEST
 
 START_TEST(s21_strcspn_forbid_in_4_spots) {
   const char *str1 = "abc$#d*efghi*#$wxyz$";
   const char *str2 = "$#*";
-  ck_assert_int_eq(s21_strcspn(str1, str2), 5);
+  ck_assert_int_eq(s21_strcspn(str1, str2), 3);
+  ck_assert_int_eq(s21_strcspn(str1, str2), strcspn(str1, str2));
 }
 END_TEST
 
@@ -18,6 +20,7 @@ START_TEST(s21_strcspn_forbid_whole) {
   const char *str1 = "abcdefghiwxyz";
   const char *str2 = "abcdefghiwxyz";
   ck_assert_int_eq(s21_strcspn(str1, str2), 0);
+  ck_assert_int_eq(s21_strcspn(str1, str2), strcspn(str1, str2));
 }
 END_TEST
 
@@ -25,6 +28,7 @@ START_TEST(s21_strcspn_empty) {
   const char *str1 = "\0";
   const char *str2 = "abcdefghiwxyz";
   ck_assert_int_eq(s21_strcspn(str1, str2), 0);
+  ck_assert_int_eq(s21_strcspn(str1, str2), strcspn(str1, str2));
 }
 END_TEST
 

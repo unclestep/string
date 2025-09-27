@@ -3,13 +3,18 @@
 void *s21_insert(const char *src, const char *str, s21_size_t start_index) {
   bool flag = src && str;
   char *r = s21_NULL;
+  s21_size_t srcl = 0;
+  s21_size_t strl = 0;
 
   if (flag) {
-    s21_size_t srcl = s21_strlen(src);
-    s21_size_t strl = s21_strlen(str);
+    srcl = s21_strlen(src);
+    strl = s21_strlen(str);
+    flag = start_index <= srcl;
+  }
 
+  if (flag) {
     r = malloc(srcl + strl + 1);
-    flag = r && (start_index <= srcl);
+    flag = r;
   }
 
   if (flag) {

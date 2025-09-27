@@ -27,6 +27,15 @@ START_TEST(s21_insert_normal) {
 }
 END_TEST
 
+START_TEST(s21_insert_to_start) {
+  const char *src = "world!";
+  const char *str = "Hello, ";
+  char *r = s21_insert(src, str, 0);
+  ck_assert_int_eq(s21_strcmp(r, "Hello, world!"), 0);
+  free(r);
+}
+END_TEST
+
 START_TEST(s21_insert_to_end) {
   const char *src = "Hello, ";
   const char *str = "world!";
@@ -44,6 +53,14 @@ START_TEST(s21_insert_null) {
 }
 END_TEST
 
+START_TEST(s21_insert_gr_start_index) {
+  const char *src = "abc";
+  const char *str = "def";
+  char *r = s21_insert(src, str, 4);
+  ck_assert_ptr_eq(r, s21_NULL);
+}
+END_TEST
+
 Suite *suite_s21_insert_test(void) {
   Suite *s = suite_create("s21_insert_test");
   TCase *tc = tcase_create("s21_insert_test");
@@ -51,8 +68,10 @@ Suite *suite_s21_insert_test(void) {
   tcase_add_test(tc, s21_insert_src_empty);
   tcase_add_test(tc, s21_insert_str_empty);
   tcase_add_test(tc, s21_insert_normal);
+  tcase_add_test(tc, s21_insert_to_start);
   tcase_add_test(tc, s21_insert_to_end);
   tcase_add_test(tc, s21_insert_null);
+  tcase_add_test(tc, s21_insert_gr_start_index);
 
   return s;
 }
