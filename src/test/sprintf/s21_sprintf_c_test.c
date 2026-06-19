@@ -1,5 +1,8 @@
 #include "s21_sprintf_test.h"
 
+#define BENCH_SPEC "c"
+#include "s21_sprintf_bench.h"
+
 START_TEST(s21_sprintf_spec_c_default_char_1) {
   char c = 'a';
   char str1[128];

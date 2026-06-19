@@ -1,6 +1,10 @@
 #ifndef S21_SPRINTF_TEST_H
 #define S21_SPRINTF_TEST_H
 
+#ifdef S21_BENCH_SPRINTF
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include <check.h>
 #include <float.h>
 #include <limits.h>

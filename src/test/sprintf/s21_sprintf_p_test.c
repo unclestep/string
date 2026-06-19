@@ -1,5 +1,8 @@
 #include "s21_sprintf_test.h"
 
+#define BENCH_SPEC "p"
+#include "s21_sprintf_bench.h"
+
 START_TEST(s21_sprintf_spec_p_zero_ptr) {
   char str1[128];
   char str2[128];

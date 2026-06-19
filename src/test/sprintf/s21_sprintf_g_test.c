@@ -1,5 +1,8 @@
 #include "s21_sprintf_test.h"
 
+#define BENCH_SPEC "g"
+#include "s21_sprintf_bench.h"
+
 START_TEST(s21_sprintf_spec_g_basic_decimal) {
   char str1[128];
   char str2[128];
